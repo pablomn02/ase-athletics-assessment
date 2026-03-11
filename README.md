@@ -1,108 +1,53 @@
-ASE Athletics - Plataforma de Análisis de Fútbol
-Demostración en Vivo
-Aplicación Frontend: [Pendiente de despliegue - Vercel/Netlify]
-API Backend: [Pendiente de despliegue - Heroku/Railway/DigitalOcean]
-Documentación de API: [URL de Swagger UI o Markdown detallado]
-Resumen del Proyecto
-Implementación de un espacio de trabajo digital profesional para ojeadores y entrenadores de fútbol
-. La plataforma permite la gestión integral de jugadores, visualización de métricas de rendimiento mediante paneles interactivos, comparación avanzada de perfiles y generación de reportes de scouting estructurados
-.
-Stack Tecnológico
-Frontend
-Framework: React.js con Context API/Redux
-.
-Estilos: Tailwind CSS (Modern utility-first)
-.
-Gráficos: Recharts / Chart.js (Visualización interactiva)
-.
-Enrutamiento: React Router
-.
-Backend
-Runtime: Node.js
-.
-Framework: Express
-.
-Base de Datos: PostgreSQL (Relacional)
-.
-Autenticación: JWT (JSON Web Tokens) con hashing de contraseñas mediante bcrypt
-.
-Validación: Joi o Yup
-.
-DevOps y Despliegue
-Host Frontend: Vercel o Netlify
-.
-Host Backend: Railway o Heroku
-.
-Host Base de Datos: PostgreSQL administrado
-.
-Control de Versiones: Git con GitHub
-.
-Configuración de Desarrollo Local
-Prerrequisitos
-Node.js (v16 o superior)
-.
-PostgreSQL (Instancia local o en la nube)
-.
-Git
-.
-Configuración Backend
-# Navegar a la carpeta backend
+# ⚽ ASE Athletics - Plataforma de Análisis de Fútbol
+
+Este proyecto es una solución integral diseñada para ojeadores y entrenadores de fútbol, permitiendo la gestión de datos de jugadores, visualización de métricas de rendimiento y generación de reportes técnicos.
+
+---
+
+## 🚀 Demostración en Vivo
+* **Aplicación Frontend:** [Pendiente de despliegue - Vercel/Netlify]
+* **API Backend:** [Pendiente de despliegue - Railway/Heroku]
+* **Credenciales de Acceso:** * **Usuario:** `demo@ase-athletics.com`
+  * **Contraseña:** `demo123`
+
+---
+
+## 🛠️ Stack Tecnológico
+
+**Frontend:**
+* **React.js:** Con Context API/Redux para la gestión del estado global.
+* **Tailwind CSS:** Diseño moderno, profesional y totalmente responsive.
+* **Recharts / Chart.js:** Visualización interactiva de estadísticas y rendimiento.
+
+**Backend:**
+* **Node.js & Express:** Arquitectura robusta para el servidor API.
+* **PostgreSQL:** Base de datos relacional para integridad de datos.
+* **JWT & Bcrypt:** Autenticación segura y cifrado de contraseñas.
+
+---
+
+## ⚙️ Configuración de Desarrollo Local
+
+### 1. Requisitos Previos
+* Node.js (v16 o superior)
+* PostgreSQL (Instancia local o en la nube)
+* Git
+
+### 2. Configuración del Backend
+```bash
+# Navegar a la carpeta
 cd backend
 
 # Instalar dependencias
 npm install
 
-# Configuración de entorno
-cp .env.example .env 
-# (Configurar DATABASE_URL y JWT_SECRET en el archivo .env)
+# Configurar variables de entorno (DATABASE_URL y JWT_SECRET)
+cp .env.example .env
 
-# Configuración de base de datos
+# Preparar la base de datos y cargar datos iniciales (JSON)
 npm run db:create
 npm run db:migrate
-npm run db:seed # Carga de datos desde players_Data_production.json [14]
+npm run db:seed
 
 # Iniciar servidor de desarrollo
 npm run dev
-Configuración Frontend
-# Navegar a la carpeta frontend
-cd frontend
-
-# Instalar dependencias
-npm install
-
-# Configuración de entorno
-cp .env.example .env 
-# Establecer REACT_APP_API_URL=http://localhost:5000
-
-# Iniciar servidor de desarrollo
-npm start
-Esquema de Base de Datos
-El sistema utiliza un diseño relacional con las siguientes entidades principales
-:
-Users: Gestión de ojeadores y personal técnico.
-Players: Datos centrales, estadísticas y valor de mercado.
-Player_Attributes: Métricas físicas y técnicas detalladas.
-Scout_Reports: Evaluaciones de rendimiento y recomendaciones.
-Endpoints de API Principales
-Autenticación
-POST /api/auth/register - Registro de nuevos usuarios.
-POST /api/auth/login - Inicio de sesión y entrega de token JWT.
-Gestión de Jugadores
-GET /api/players - Listado paginado con filtros de posición, equipo y edad
-.
-GET /api/players/:id - Detalle completo de un jugador.
-POST /api/players - Creación de perfiles de jugador.
-Análisis y Reportes
-GET /api/dashboard/stats - Métricas agregadas para el panel principal
-.
-POST /api/reports - Creación de reportes de scouting con escala 1-10
-.
-Pruebas
-# Pruebas backend
-cd backend && npm test
-
-# Pruebas frontend
-cd frontend && npm test
-Credenciales de Demostración
-Usuario: demo@ase-athletics.com
-Contraseña: demo123
