@@ -4,6 +4,7 @@ import { useState } from 'react';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import PlayersPage from './pages/PlayersPage';
+import { PlayerDetailPage, PlayerFormPage } from './pages/Players';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth } from './contexts/AuthContext';
 import './App.css';
@@ -123,6 +124,9 @@ function App() {
 
           <Route element={<ProtectedRoute />}>
             <Route path="/players" element={<PlayersPage />} />
+            <Route path="/players/create" element={<PlayerFormPage />} />
+            <Route path="/players/:id" element={<PlayerDetailPage />} />
+            <Route path="/players/edit/:id" element={<PlayerFormPage />} />
           </Route>
         </Routes>
       </main>
