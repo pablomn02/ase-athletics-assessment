@@ -1,0 +1,223 @@
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at top left, #0f172a, #020617 45%, #020617);
+  color: #e5e7eb;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  backdrop-filter: blur(18px);
+  background: linear-gradient(to right, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.85));
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-logo-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  background: radial-gradient(circle at 30% 30%, #38bdf8, #0ea5e9 40%, #1e3a8a);
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.7);
+}
+
+.app-brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-brand-title {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.app-brand-subtitle {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.app-nav {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.app-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #e5e7eb;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  text-decoration: none;
+  transition: all 0.15s ease-out;
+}
+
+.app-nav-link.secondary {
+  background: linear-gradient(to right, #22c55e, #16a34a);
+  border-color: rgba(21, 128, 61, 0.9);
+  color: #ecfdf5;
+}
+
+.app-nav-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.4);
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem 3rem;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 420px;
+}
+
+.auth-card {
+  background: radial-gradient(circle at top left, #0f172a, #020617 55%, #020617);
+  border-radius: 1.25rem;
+  padding: 2rem 2.25rem;
+  box-shadow:
+    0 30px 80px rgba(15, 23, 42, 0.8),
+    0 0 0 1px rgba(148, 163, 184, 0.15);
+}
+
+.auth-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.auth-subtitle {
+  margin: 0 0 1.75rem;
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+.auth-error {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.75rem;
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  color: #fecaca;
+  font-size: 0.85rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.auth-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: #d1d5db;
+}
+
+.auth-input {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  padding: 0.6rem 0.75rem;
+  background: rgba(15, 23, 42, 0.85);
+  color: #e5e7eb;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.15s ease-out;
+}
+
+.auth-input::placeholder {
+  color: #6b7280;
+}
+
+.auth-input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.8);
+}
+
+.auth-button {
+  margin-top: 0.5rem;
+  border-radius: 0.9rem;
+  border: none;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease-out;
+}
+
+.auth-button.primary {
+  background: linear-gradient(to right, #38bdf8, #0ea5e9);
+  color: #0b1120;
+  box-shadow: 0 12px 25px rgba(56, 189, 248, 0.45);
+}
+
+.auth-button.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 35px rgba(56, 189, 248, 0.6);
+}
+
+.auth-button:disabled {
+  opacity: 0.7;
+  cursor: default;
+  box-shadow: none;
+}
+
+.auth-switch {
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.auth-link {
+  color: #38bdf8;
+  text-decoration: none;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .app-header {
+    padding: 0.75rem 1.25rem;
+  }
+
+  .auth-card {
+    padding: 1.75rem 1.5rem;
+  }
+}
