@@ -31,12 +31,12 @@ const validateBody = (schema) => (req, res, next) => {
 };
 
 // POST /api/auth/register
-router.post('/api/auth/register', validateBody(registerSchema), register);
+router.post('/register', validateBody(registerSchema), register);
 
 // POST /api/auth/login
-router.post('/api/auth/login', validateBody(loginSchema), login);
+router.post('/login', validateBody(loginSchema), login);
 
 // POST /api/auth/logout
-router.post('/api/auth/logout', logout);
+router.post('/logout', logout);
 
 module.exports = router;
