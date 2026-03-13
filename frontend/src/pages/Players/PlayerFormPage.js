@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, Check } from 'lucide-react';
 import api from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 
 const defaultForm = {
   name: '',
@@ -120,6 +121,7 @@ function validateForm(form) {
 function PlayerFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const isEditing = !!id;
 
   const [loading, setLoading] = useState(isEditing);
@@ -179,11 +181,13 @@ function PlayerFormPage() {
 
       if (isEditing) {
         await api.put(`/players/${id}`, payload);
+        toast.success('Jugador actualizado correctamente.');
         setSuccess('updated');
         setTimeout(() => navigate(`/players/${id}`, { state: { success: 'updated' } }), 2200);
       } else {
         const response = await api.post('/players', payload);
         const created = response.data?.data ?? response.data;
+        toast.success('Jugador creado correctamente.');
         setSuccess('created');
         setTimeout(() => navigate(`/players/${created?.id ?? id}`, { state: { success: 'created' } }), 2200);
       }

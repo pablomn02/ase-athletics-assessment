@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Search, ChevronLeft, ChevronRight, AlertCircle, X, Plus, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../../services/api';
+import { formatMarketValue } from '../../utils/formatNumber';
 import PlayerSkeleton from './PlayerSkeleton';
 
 const PAGE_SIZE_OPTIONS = [20, 25, 30];
@@ -24,16 +25,6 @@ const getAvatarColor = (name) => {
 const getInitials = (name) => {
   if (!name) return '—';
   return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-};
-
-const formatMarketValue = (v) => {
-  if (v == null) return '—';
-  const n = Number(v);
-  if (Number.isNaN(n)) return '—';
-  if (n >= 1e9) return `€${(n / 1e9).toFixed(1)}M`;
-  if (n >= 1e6) return `€${(n / 1e6).toFixed(1)}M`;
-  if (n >= 1e3) return `€${(n / 1e3).toFixed(0)}k`;
-  return `€${n}`;
 };
 
 function PlayerList() {
@@ -213,7 +204,7 @@ function PlayerList() {
             className="inline-flex min-h-[44px] touch-manipulation items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 py-2.5 font-semibold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-600 active:scale-[0.98]"
           >
             <Plus size={20} />
-            <span className="hidden sm:inline">Crear Jugador</span>
+            <span className="hidden sm:inline">Añadir Jugador</span>
             <span className="sm:hidden">Crear</span>
           </button>
         </div>
@@ -266,8 +257,13 @@ function PlayerList() {
             <span className="text-slate-400">{filtersOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}</span>
           </button>
 
-          <div className={`border-t border-slate-700/80 px-4 py-4 ${filtersOpen ? 'block' : 'hidden'}`}>
-            <p className="text-xs text-slate-500 mb-4">Los resultados se actualizan al instante al elegir cada filtro.</p>
+          <div
+            className="grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out"
+            style={{ gridTemplateRows: filtersOpen ? '1fr' : '0fr' }}
+          >
+            <div
+              className={`min-h-0 overflow-hidden border-t border-slate-700/80 px-4 py-4 transition-opacity duration-300 ${filtersOpen ? 'opacity-100' : 'opacity-0'}`}
+            >
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
               <div>
                 <label htmlFor="position-filter" className={labelStyle}>Posición</label>
@@ -393,6 +389,7 @@ function PlayerList() {
                 Limpiar filtros
               </button>
             )}
+            </div>
           </div>
         </div>
 

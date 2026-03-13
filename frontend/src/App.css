@@ -1,5 +1,5 @@
 :root {
-  --app-header-height: 68px;
+  --app-header-height: 56px;
 }
 
 .app-shell {
@@ -12,12 +12,6 @@
 }
 
 .app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 1rem 2rem;
-  min-height: var(--app-header-height);
   flex-shrink: 0;
   border-bottom: 1px solid rgba(148, 163, 184, 0.25);
   backdrop-filter: blur(18px);
@@ -27,6 +21,34 @@
   z-index: 20;
   width: 100%;
   min-width: 0;
+  padding: 0 1rem;
+}
+
+.app-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 auto;
+  max-width: 76rem;
+  width: 100%;
+  min-height: var(--app-header-height);
+  padding: 0.5rem 0.75rem;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .app-header-inner {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-header-inner {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem; /* lg:px-6 */
+  }
 }
 
 .app-brand {
@@ -35,19 +57,17 @@
   gap: 0.5rem;
   min-width: 0;
   flex: 1;
+  text-decoration: none;
+  color: inherit;
 }
 
-.app-logo-circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.875rem;
-  background: radial-gradient(circle at 30% 30%, #38bdf8, #0ea5e9 40%, #1e3a8a);
-  box-shadow: 0 0 25px rgba(56, 189, 248, 0.7);
+a.app-brand:hover {
+  opacity: 0.9;
+}
+
+.app-logo-img {
+  width: 8rem;
+  object-fit: contain;
   flex-shrink: 0;
 }
 
@@ -338,14 +358,12 @@
     min-height: var(--app-header-height);
   }
 
-  .app-brand {
-    gap: 0.5rem;
+  .app-logo-img {
+    width: 7.2rem;
   }
 
-  .app-logo-circle {
-    width: 32px;
-    height: 32px;
-    font-size: 0.75rem;
+  .app-brand {
+    gap: 0.5rem;
   }
 
   .app-brand-title {

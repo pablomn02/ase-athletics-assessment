@@ -64,6 +64,23 @@ const listReports = async ({ page = 1, limit = 20, playerId, scoutId } = {}) => 
   }
 };
 
+const getReportById = async (id) => {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT sr.id, sr.player_id, sr.scout_id, sr.match_date, sr.overall_rating, sr.strengths, sr.weaknesses, sr.recommendation, sr.created_at,
+              p.name AS player_name, p.team AS player_team
+       FROM scout_reports sr
+       JOIN players p ON p.id = sr.player_id
+       WHERE sr.id = $1`,
+      [id]
+    );
+    return result.rows[0] || null;
+  } finally {
+    client.release();
+  }
+};
+
 const createReport = async (data) => {
   const {
     player_id,
@@ -167,6 +184,7 @@ const deleteReport = async (id) => {
 
 module.exports = {
   listReports,
+  getReportById,
   createReport,
   updateReport,
   deleteReport,

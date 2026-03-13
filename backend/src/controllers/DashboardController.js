@@ -1,8 +1,11 @@
 const DashboardModel = require('../models/DashboardModel');
 
-const getStats = async (_req, res) => {
+const getStats = async (req, res) => {
   try {
-    const stats = await DashboardModel.getDashboardStats();
+    const filters = {};
+    if (req.query.team?.trim()) filters.team = req.query.team.trim();
+    if (req.query.position?.trim()) filters.position = req.query.position.trim();
+    const stats = await DashboardModel.getDashboardStats(filters);
 
     return res.json({
       ok: true,

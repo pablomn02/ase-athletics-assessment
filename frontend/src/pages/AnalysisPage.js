@@ -9,6 +9,8 @@ import { Link } from 'react-router-dom';
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -19,8 +21,9 @@ import {
   Cell,
   Legend,
 } from 'recharts';
-import { Users, TrendingUp, Target, AlertCircle } from 'lucide-react';
+import { Users, TrendingUp, Target, AlertCircle, Filter } from 'lucide-react';
 import api from '../services/api';
+import { formatCurrencyWithSymbol } from '../utils/formatNumber';
 
 const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4'];
 
@@ -28,21 +31,35 @@ function AnalysisPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stats, setStats] = useState(null);
+  const [filterTeam, setFilterTeam] = useState('');
+  const [filterPosition, setFilterPosition] = useState('');
+  const [filterOptions, setFilterOptions] = useState({ teams: [], positions: [] });
+
+  const fetchStats = async (team, position) => {
+    try {
+      setLoading(true);
+      const params = {};
+      if (team) params.team = team;
+      if (position) params.position = position;
+      const res = await api.get('/dashboard/stats', { params });
+      const data = res.data?.data ?? res.data;
+      setStats(data);
+      if (!team && !position && data) {
+        setFilterOptions({
+          teams: (data.byTeam || []).map((r) => r.team).filter(Boolean),
+          positions: (data.byPosition || []).map((r) => r.position).filter(Boolean),
+        });
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al cargar el panel de análisis');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get('/dashboard/stats');
-        setStats(res.data?.data ?? res.data);
-      } catch (err) {
-        setError(err.response?.data?.message || 'Error al cargar el panel de análisis');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, []);
+    fetchStats(filterTeam, filterPosition);
+  }, [filterTeam, filterPosition]);
 
   if (loading) {
     return (
@@ -102,9 +119,46 @@ function AnalysisPage() {
     <section className="w-full min-h-screen px-4 py-6">
       <div className="mx-auto max-w-6xl">
         <h1 className="text-2xl font-bold text-slate-100 mb-2">Panel de Análisis</h1>
-        <p className="text-slate-400 text-sm mb-8">
-          Métricas y distribución de la base de jugadores
+        <p className="text-slate-400 text-sm mb-4">
+          Métricas y distribución de la base de jugadores. Los gráficos se actualizan según los filtros.
         </p>
+
+        {/* Filtros equipo / posición */}
+        <div className="mb-8 flex flex-wrap items-center gap-4 rounded-xl border border-slate-700/80 bg-slate-900/50 p-4">
+          <span className="flex items-center gap-2 text-slate-400 font-medium">
+            <Filter size={18} />
+            Filtros
+          </span>
+          <select
+            value={filterTeam}
+            onChange={(e) => setFilterTeam(e.target.value)}
+            className="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 min-w-[160px]"
+          >
+            <option value="">Todos los equipos</option>
+            {filterOptions.teams.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <select
+            value={filterPosition}
+            onChange={(e) => setFilterPosition(e.target.value)}
+            className="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 min-w-[160px]"
+          >
+            <option value="">Todas las posiciones</option>
+            {filterOptions.positions.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+          {(filterTeam || filterPosition) && (
+            <button
+              type="button"
+              onClick={() => { setFilterTeam(''); setFilterPosition(''); }}
+              className="text-sm text-sky-400 hover:text-sky-300"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
 
         {/* KPIs */}
         <div className="grid gap-4 sm:grid-cols-3 mb-10">
@@ -141,7 +195,7 @@ function AnalysisPage() {
                     {p.team && <span className="text-slate-500 ml-2">({p.team})</span>}
                   </span>
                   <span className="text-emerald-400 font-semibold">
-                    {p.market_value != null ? `€${Number(p.market_value).toLocaleString('es-ES')}` : '—'}
+                    {formatCurrencyWithSymbol(p.market_value)}
                   </span>
                 </li>
               ))}
@@ -202,20 +256,40 @@ function AnalysisPage() {
             </div>
           )}
 
-          {/* Valor de mercado (buckets) */}
+          {/* Tendencias valor de mercado (líneas) */}
           {stats?.marketValueBuckets?.length > 0 && (
             <div className="rounded-xl border border-slate-700/80 bg-slate-900/50 p-6 lg:col-span-2">
-              <h2 className="text-lg font-bold text-slate-100 mb-4">Tendencia por valor de mercado</h2>
+              <h2 className="text-lg font-bold text-slate-100 mb-4">Tendencias por valor de mercado</h2>
               <div className="h-[260px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.marketValueBuckets} layout="vertical" margin={{ left: 60 }}>
+                  <LineChart data={stats.marketValueBuckets} margin={{ left: 20, right: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(71,85,105,0.4)" />
-                    <XAxis type="number" stroke="#94a3b8" fontSize={12} />
-                    <YAxis type="category" dataKey="bucket" stroke="#94a3b8" fontSize={12} width={80} />
+                    <XAxis dataKey="bucket" stroke="#94a3b8" fontSize={12} />
+                    <YAxis stroke="#94a3b8" fontSize={12} />
                     <Tooltip
                       contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', border: '1px solid rgba(51,65,85,0.8)' }}
                     />
-                    <Bar dataKey="count" fill="#10b981" radius={[0, 4, 4, 0]} name="Jugadores" />
+                    <Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981' }} name="Jugadores" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Goles por posición */}
+          {stats?.goalsByPosition?.length > 0 && (
+            <div className="rounded-xl border border-slate-700/80 bg-slate-900/50 p-6">
+              <h2 className="text-lg font-bold text-slate-100 mb-4">Goles por posición</h2>
+              <div className="h-[260px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.goalsByPosition}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(71,85,105,0.4)" />
+                    <XAxis dataKey="position" stroke="#94a3b8" fontSize={11} />
+                    <YAxis stroke="#94a3b8" fontSize={12} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', border: '1px solid rgba(51,65,85,0.8)' }}
+                    />
+                    <Bar dataKey="goals" fill="#ec4899" radius={[4, 4, 0, 0]} name="Goles" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

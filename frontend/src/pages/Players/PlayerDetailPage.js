@@ -9,7 +9,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { ArrowLeft, Edit2, Trash2, AlertCircle, Check, X } from 'lucide-react';
 import api from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 import PlayerStats from './PlayerStats';
+import { formatCurrencyWithSymbol } from '../../utils/formatNumber';
 
 const getAvatarColor = (name) => {
   if (!name) return '#0ea5e9';
@@ -32,6 +34,7 @@ function PlayerDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
 
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -66,6 +69,7 @@ function PlayerDetailPage() {
     try {
       setDeleting(true);
       await api.delete(`/players/${id}`);
+      toast.success('Jugador eliminado correctamente.');
       navigate('/players', { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'Error al eliminar el jugador');
@@ -247,7 +251,7 @@ function PlayerDetailPage() {
                     Valor de mercado
                   </p>
                   <p className="text-2xl font-bold" style={{ color: '#10b981' }}>
-                    €{(player.market_value ?? player.marketValue).toLocaleString('es-ES')}
+                    {formatCurrencyWithSymbol(player.market_value ?? player.marketValue)}
                   </p>
                 </div>
               )}

@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,6 +37,7 @@ function LoginPage() {
     try {
       setLoading(true);
       await login({ email: form.email, password: form.password });
+      toast.success('Sesión iniciada correctamente.');
     } catch (err) {
       const message =
         err?.response?.data?.message ||

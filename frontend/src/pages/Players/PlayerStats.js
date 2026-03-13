@@ -4,6 +4,7 @@
  */
 
 import PlayerRadarChart from './PlayerRadarChart';
+import { formatCurrencyWithSymbol } from '../../utils/formatNumber';
 
 function PlayerStats({ player }) {
   return (
@@ -37,9 +38,9 @@ function PlayerStats({ player }) {
         </div>
       )}
 
-      {/* Atributos: gráfico radar (más grande en tablet/desktop, responsivo) */}
+      {/* Atributos: barras de progreso (escala 1-10) */}
       <div
-        className="mb-8 rounded-xl border p-4 sm:p-6 flex flex-col items-center overflow-visible"
+        className="mb-8 rounded-xl border p-4 sm:p-6"
         style={{
           borderColor: 'rgba(51, 65, 85, 0.5)',
           backgroundColor: 'rgba(15, 23, 42, 0.7)',
@@ -48,10 +49,43 @@ function PlayerStats({ player }) {
         <h2 className="text-xl font-bold mb-4 sm:mb-6 w-full text-left" style={{ color: '#f1f5f9' }}>
           Atributos
         </h2>
-        <div className="w-full max-w-[320px] sm:max-w-[400px] md:max-w-[440px] mx-auto" style={{ minHeight: 0 }}>
-          <PlayerRadarChart player={player} />
+        <div className="space-y-4">
+          {[
+            { key: 'pace', label: 'Ritmo' },
+            { key: 'shooting', label: 'Disparo' },
+            { key: 'passing', label: 'Pase' },
+            { key: 'dribbling', label: 'Regate' },
+            { key: 'defending', label: 'Defensa' },
+            { key: 'physicality', label: 'Físico' },
+          ].map(({ key, label }) => {
+            const value = player[key] != null ? Math.min(10, Math.max(1, Number(player[key]))) : 0;
+            const pct = value ? (value / 10) * 100 : 0;
+            const barColor = pct >= 7 ? '#10b981' : pct >= 4 ? '#eab308' : '#ef4444';
+            return (
+              <div key={key}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span style={{ color: '#94a3b8' }}>{label}</span>
+                  <span style={{ color: '#e2e8f0' }}>{value ? `${value}/10` : '—'}</span>
+                </div>
+                <div className="h-2.5 w-full rounded-full bg-slate-700 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${pct}%`, backgroundColor: barColor }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <p className="mt-4 text-sm text-slate-500 text-center">Escala 0–100 · Verde: alto · Amarillo: medio · Rojo: bajo</p>
+        <p className="mt-4 text-sm text-slate-500">Escala 1–10</p>
+
+        {/* Gráfico radar (complementario) */}
+        <div className="mt-8 pt-6 border-t border-slate-700/50">
+          <h3 className="text-lg font-semibold mb-4" style={{ color: '#f1f5f9' }}>Vista radar</h3>
+          <div className="w-full max-w-[320px] sm:max-w-[400px] mx-auto" style={{ minHeight: 0 }}>
+            <PlayerRadarChart player={player} />
+          </div>
+        </div>
       </div>
 
       {/* Información de Contrato (snake_case del backend) */}
@@ -73,9 +107,7 @@ function PlayerStats({ player }) {
                   Salario
                 </p>
                 <p className="text-lg font-semibold" style={{ color: '#f1f5f9' }}>
-                  {typeof player.contract_salary === 'number'
-                    ? `€${player.contract_salary.toLocaleString('es-ES')}`
-                    : player.contract_salary}
+                  {formatCurrencyWithSymbol(player.contract_salary)}
                 </p>
               </div>
             )}

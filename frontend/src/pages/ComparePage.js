@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, X, Users } from 'lucide-react';
 import api from '../services/api';
+import { formatCurrencyWithSymbol } from '../utils/formatNumber';
 import PlayerRadarChart from './Players/PlayerRadarChart';
 import CompareRadarOverlay from './Players/CompareRadarOverlay';
 
@@ -24,7 +25,7 @@ const STAT_KEYS = [
   { key: 'goals', label: 'Goles' },
   { key: 'assists', label: 'Asistencias' },
   { key: 'appearances', label: 'Partidos' },
-  { key: 'market_value', label: 'Valor (€)', format: (v) => v != null ? `€${Number(v).toLocaleString('es-ES')}` : '—' },
+  { key: 'market_value', label: 'Valor (€)', format: (v) => formatCurrencyWithSymbol(v) },
 ];
 
 const MAX_PLAYERS = 4;

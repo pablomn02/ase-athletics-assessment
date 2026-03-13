@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Plus, AlertCircle } from 'lucide-react';
+import { FileText, Plus, AlertCircle, Edit2 } from 'lucide-react';
 import api from '../services/api';
 
 function ReportsPage() {
@@ -67,29 +67,35 @@ function ReportsPage() {
         ) : (
           <ul className="space-y-3">
             {reports.map((r) => (
-              <li key={r.id}>
-                <Link
-                  to={`/players/${r.player_id}`}
-                  className="block rounded-xl bg-slate-800/50 p-4 hover:bg-slate-800/80"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold text-slate-100">{r.player_name}</p>
-                      <p className="text-sm text-slate-500">{r.player_team}</p>
-                      {r.match_date && (
-                        <p className="text-xs text-slate-500 mt-1">{new Date(r.match_date).toLocaleDateString('es-ES')}</p>
-                      )}
+              <li key={r.id} className="rounded-xl bg-slate-800/50 overflow-hidden">
+                <div className="flex items-stretch gap-2 p-4 hover:bg-slate-800/80">
+                  <Link to={`/players/${r.player_id}`} className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-semibold text-slate-100">{r.player_name}</p>
+                        <p className="text-sm text-slate-500">{r.player_team}</p>
+                        {r.match_date && (
+                          <p className="text-xs text-slate-500 mt-1">{new Date(r.match_date).toLocaleDateString('es-ES')}</p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-slate-700 text-slate-300">
+                          {r.overall_rating}/10
+                        </span>
+                        {r.recommendation && (
+                          <p className="text-xs text-amber-400 mt-1 truncate max-w-[120px]">{r.recommendation}</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-slate-700 text-slate-300">
-                        {r.overall_rating}/10
-                      </span>
-                      {r.recommendation && (
-                        <p className="text-xs text-amber-400 mt-1 truncate max-w-[120px]">{r.recommendation}</p>
-                      )}
-                    </div>
-                  </div>
-                </Link>
+                  </Link>
+                  <Link
+                    to={`/reports/edit/${r.id}`}
+                    className="flex items-center justify-center rounded-lg px-3 py-2 text-slate-400 hover:text-amber-400 hover:bg-slate-700/50 transition-colors"
+                    title="Editar reporte"
+                  >
+                    <Edit2 size={18} />
+                  </Link>
+                </div>
               </li>
             ))}
           </ul>

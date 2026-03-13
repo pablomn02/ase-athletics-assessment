@@ -24,26 +24,27 @@ function App() {
 
   return (
     <div className="app-shell">
-      {/* Header y menú solo cuando estás logueado; login/registro a pantalla completa sin barra. */}
       {isAuthenticated && (
         <>
           <header className="app-header">
-            <div className="app-brand">
-              <span className="app-logo-circle">ASE</span>
-              <div className="app-brand-text">
-                <span className="app-brand-title">ASE Athletics</span>
-                <span className="app-brand-subtitle">Scouting Workspace</span>
-              </div>
+            <div className="app-header-inner">
+              <Link to="/players" className="app-brand" aria-label="Ir al directorio de jugadores" onClick={() => setNavOpen(false)}>
+                <img
+                  src={`${process.env.PUBLIC_URL}/Captura_de_pantalla_2026-03-13_142827-removebg-preview.png`}
+                  alt="ASE Athletics"
+                  className="app-logo-img"
+                />
+              </Link>
+              <button
+                type="button"
+                className="inline-flex min-h-[44px] min-w-[44px] touch-manipulation items-center justify-center rounded-full border border-slate-700 bg-slate-900/70 p-2 text-slate-200 hover:bg-slate-800/80"
+                onClick={() => setNavOpen((open) => !open)}
+                aria-label={navOpen ? 'Cerrar menú' : 'Abrir menú'}
+                aria-expanded={navOpen}
+              >
+                {navOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
             </div>
-            <button
-              type="button"
-              className="inline-flex min-h-[44px] min-w-[44px] touch-manipulation items-center justify-center rounded-full border border-slate-700 bg-slate-900/70 p-2 text-slate-200 hover:bg-slate-800/80"
-              onClick={() => setNavOpen((open) => !open)}
-              aria-label={navOpen ? 'Cerrar menú' : 'Abrir menú'}
-              aria-expanded={navOpen}
-            >
-              {navOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
           </header>
 
           {navOpen && (
@@ -118,6 +119,7 @@ function App() {
             <Route path="/compare" element={<ComparePage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/reports/create" element={<ReportFormPage />} />
+            <Route path="/reports/edit/:id" element={<ReportFormPage />} />
           </Route>
         </Routes>
       </main>
