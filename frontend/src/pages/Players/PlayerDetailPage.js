@@ -6,8 +6,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Edit2, Trash2, AlertCircle } from 'lucide-react';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { ArrowLeft, Edit2, Trash2, AlertCircle, Check, X } from 'lucide-react';
 import api from '../../services/api';
 import PlayerStats from './PlayerStats';
 
@@ -31,19 +31,27 @@ const getInitials = (name) => {
 function PlayerDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+  const location = useLocation();
+
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [successBanner, setSuccessBanner] = useState(location.state?.success ?? null);
+
+  const dismissSuccessBanner = () => {
+    setSuccessBanner(null);
+    navigate(location.pathname, { replace: true, state: {} });
+  };
 
   useEffect(() => {
     const fetchPlayerDetail = async () => {
       try {
         setLoading(true);
         const response = await api.get(`/players/${id}`);
-        setPlayer(response.data);
+        const payload = response.data?.data ?? response.data;
+        setPlayer(payload);
       } catch (err) {
         setError(err.response?.data?.message || 'No se pudo cargar el jugador');
       } finally {
@@ -67,7 +75,7 @@ function PlayerDetailPage() {
 
   if (loading) {
     return (
-      <section className="w-full min-h-screen px-4 py-6 bg-gradient-to-b from-slate-950 to-slate-900">
+      <section className="w-full min-h-screen px-4 py-6">
         <div className="mx-auto max-w-4xl">
           <div className="animate-pulse space-y-4">
             <div className="h-10 w-32 rounded bg-slate-700"></div>
@@ -80,7 +88,7 @@ function PlayerDetailPage() {
 
   if (error && !player) {
     return (
-      <section className="w-full min-h-screen px-4 py-6 bg-gradient-to-b from-slate-950 to-slate-900">
+      <section className="w-full min-h-screen px-4 py-6">
         <div className="mx-auto max-w-4xl">
           <button
             onClick={() => navigate('/players')}
@@ -114,7 +122,7 @@ function PlayerDetailPage() {
   if (!player) return null;
 
   return (
-    <section className="w-full min-h-screen px-4 py-6 bg-gradient-to-b from-slate-950 to-slate-900">
+    <section className="w-full min-h-screen px-4 py-6">
       <div className="mx-auto max-w-4xl">
         {/* Botón Volver */}
         <button
@@ -124,6 +132,28 @@ function PlayerDetailPage() {
           <ArrowLeft size={18} />
           Volver a Jugadores
         </button>
+
+        {/* Mensaje de éxito al crear/actualizar */}
+        {successBanner && (
+          <div className="mb-6 rounded-xl border-2 border-emerald-500/60 bg-emerald-500/20 p-4 flex items-center justify-between gap-4 shadow-lg shadow-emerald-500/10">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/30">
+                <Check size={22} className="text-emerald-300" strokeWidth={2.5} />
+              </div>
+              <p className="text-base font-semibold text-emerald-100">
+                {successBanner === 'created' ? 'El jugador se ha creado correctamente.' : 'El jugador se ha actualizado correctamente.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={dismissSuccessBanner}
+              className="p-1.5 rounded-lg text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+              aria-label="Cerrar"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        )}
 
         {/* Error al eliminar */}
         {error && (
@@ -162,7 +192,7 @@ function PlayerDetailPage() {
                 {player.name}
               </h1>
               <p style={{ color: '#cbd5e1' }} className="mt-2">
-                {player.position}
+                {player.position || '—'}
               </p>
             </div>
 
@@ -174,7 +204,7 @@ function PlayerDetailPage() {
                     Equipo
                   </p>
                   <p className="text-lg font-semibold" style={{ color: '#f1f5f9' }}>
-                    {player.team}
+                    {player.team || '—'}
                   </p>
                 </div>
                 <div>
@@ -182,7 +212,7 @@ function PlayerDetailPage() {
                     Edad
                   </p>
                   <p className="text-lg font-semibold" style={{ color: '#f1f5f9' }}>
-                    {player.age} años
+                    {player.age != null ? `${player.age} años` : '—'}
                   </p>
                 </div>
                 <div>
@@ -190,21 +220,22 @@ function PlayerDetailPage() {
                     Nacionalidad
                   </p>
                   <p className="text-lg font-semibold" style={{ color: '#f1f5f9' }}>
-                    {player.nationality}
+                    {player.nationality || '—'}
                   </p>
                 </div>
                 <div>
                   <p style={{ color: '#94a3b8' }} className="text-sm uppercase tracking-wider">
-                    Altura
+                    Altura / Peso
                   </p>
                   <p className="text-lg font-semibold" style={{ color: '#f1f5f9' }}>
-                    {player.height ? `${player.height} cm` : 'N/A'}
+                    {player.height != null ? `${player.height} cm` : '—'}
+                    {player.weight != null ? ` / ${player.weight} kg` : ''}
                   </p>
                 </div>
               </div>
 
-              {/* Mercado */}
-              {player.marketValue && (
+              {/* Valor de mercado (backend: market_value) */}
+              {(player.market_value != null || player.marketValue != null) && (
                 <div
                   className="rounded-lg border p-4 mt-6"
                   style={{
@@ -213,10 +244,10 @@ function PlayerDetailPage() {
                   }}
                 >
                   <p style={{ color: '#94a3b8' }} className="text-sm uppercase tracking-wider">
-                    Valor de Mercado
+                    Valor de mercado
                   </p>
                   <p className="text-2xl font-bold" style={{ color: '#10b981' }}>
-                    ${player.marketValue.toLocaleString()}
+                    €{(player.market_value ?? player.marketValue).toLocaleString('es-ES')}
                   </p>
                 </div>
               )}

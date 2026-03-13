@@ -3,13 +3,17 @@ const PlayerModel = require('../models/PlayerModel');
 
 const listPlayers = async (req, res) => {
   const page = Number(req.query.page) > 0 ? Number(req.query.page) : 1;
-  const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 20;
+  const rawLimit = Number(req.query.limit);
+  const limit = rawLimit >= 20 && rawLimit <= 30 ? rawLimit : 25;
 
   const filters = {
     position: req.query.position,
     team: req.query.team,
+    nationality: req.query.nationality,
     minAge: req.query.minAge,
     maxAge: req.query.maxAge,
+    minMarketValue: req.query.minMarketValue,
+    maxMarketValue: req.query.maxMarketValue,
   };
 
   try {
@@ -206,7 +210,8 @@ const deletePlayer = async (req, res) => {
 const searchPlayers = async (req, res) => {
   const q = (req.query.q || '').trim();
   const page = Number(req.query.page) > 0 ? Number(req.query.page) : 1;
-  const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 20;
+  const rawLimit = Number(req.query.limit);
+  const limit = rawLimit >= 20 && rawLimit <= 30 ? rawLimit : 25;
 
   if (!q) {
     return res.status(400).json({
@@ -215,11 +220,22 @@ const searchPlayers = async (req, res) => {
     });
   }
 
+  const filters = {
+    position: req.query.position,
+    team: req.query.team,
+    nationality: req.query.nationality,
+    minAge: req.query.minAge,
+    maxAge: req.query.maxAge,
+    minMarketValue: req.query.minMarketValue,
+    maxMarketValue: req.query.maxMarketValue,
+  };
+
   try {
     const { players, total } = await PlayerModel.searchPlayers({
       q,
       page,
       limit,
+      filters,
     });
 
     return res.json({

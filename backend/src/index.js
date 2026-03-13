@@ -30,6 +30,14 @@ app.use('/api/dashboard', dashboardRoutes);
 // Reportes de scouting
 app.use('/api/reports', reportRoutes);
 
+// Si llega aquí, ninguna ruta coincidió (útil para depurar 404)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    console.warn('[404] Ruta no encontrada:', req.method, req.originalUrl);
+  }
+  res.status(404).json({ ok: false, message: 'Ruta no encontrada' });
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`API escuchando en puerto ${PORT}`);

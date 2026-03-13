@@ -1,782 +1,569 @@
 /**
  * PlayerList.js
- * Componente principal para la visualización de lista de jugadores
- * Requisitos de Excelencia Técnica:
- * ✓ Consumo de API: GET /api/players
- * ✓ Visualización en tabla responsiva
- * ✓ Paginación: 20 jugadores por página
- * ✓ Diseño Mobile-First responsivo
- * ✓ Estética profesional con ui_guidelines.json
- * ✓ Estados de carga con esqueletos
- * ✓ Avatares con placeholders
- * ✓ Filtros por posición y equipo
+ * Directorio de jugadores: cuadrícula/tabla, paginación 20-30, búsqueda y filtros avanzados.
+ * Mobile-First: filtros colapsables, tacto amigable, avatar con iniciales.
  */
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Search, ChevronLeft, ChevronRight, AlertCircle, X, Plus } from 'lucide-react';
+import { Users, Search, ChevronLeft, ChevronRight, AlertCircle, X, Plus, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../../services/api';
-import playerImageService from '../../services/playerImageService';
 import PlayerSkeleton from './PlayerSkeleton';
 
-const ITEMS_PER_PAGE = 20;
+const PAGE_SIZE_OPTIONS = [20, 25, 30];
+const DEFAULT_PAGE_SIZE = 25;
 
-/**
- * Genera un color único basado en el nombre del jugador
- */
+const POSICIONES_ORDEN = ['Portero', 'Defensa', 'Centrocampista', 'Delantero'];
+
 const getAvatarColor = (name) => {
   if (!name) return '#0ea5e9';
   const colors = ['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4'];
-  const charCode = name.charCodeAt(0);
-  return colors[charCode % colors.length];
+  return colors[name.charCodeAt(0) % colors.length];
 };
 
-/**
- * Obtiene las iniciales del nombre
- */
 const getInitials = (name) => {
   if (!name) return '—';
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase();
+  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+};
+
+const formatMarketValue = (v) => {
+  if (v == null) return '—';
+  const n = Number(v);
+  if (Number.isNaN(n)) return '—';
+  if (n >= 1e9) return `€${(n / 1e9).toFixed(1)}M`;
+  if (n >= 1e6) return `€${(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `€${(n / 1e3).toFixed(0)}k`;
+  return `€${n}`;
 };
 
 function PlayerList() {
   const navigate = useNavigate();
-  
-  // Estado de datos
+
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [positions, setPositions] = useState([]);
   const [teams, setTeams] = useState([]);
-  const [playerImages, setPlayerImages] = useState({}); // Mapeo: playerName -> imageUrl
 
-  // Estado de paginación
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [totalPages, setTotalPages] = useState(1);
   const [totalPlayers, setTotalPlayers] = useState(0);
 
-  // Estado de búsqueda
   const [search, setSearch] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Estado de filtros
   const [selectedPosition, setSelectedPosition] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('');
+  const [selectedNationality, setSelectedNationality] = useState('');
+  const [minAge, setMinAge] = useState('');
+  const [maxAge, setMaxAge] = useState('');
+  const [minMarketValue, setMinMarketValue] = useState('');
+  const [maxMarketValue, setMaxMarketValue] = useState('');
+  const [nationalities, setNationalities] = useState([]);
 
-  /**
-   * Obtiene los jugadores de la API
-   * @param {number} currentPage - Número de página actual
-   * @param {string} term - Término de búsqueda (opcional)
-   * @param {string} position - Filtro por posición (opcional)
-   * @param {string} team - Filtro por equipo (opcional)
-   */
-  const fetchPlayers = async (currentPage = 1, term = '', position = '', team = '') => {
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Valores numéricos con debounce para no disparar búsqueda en cada tecla
+  const [minAgeDebounced, setMinAgeDebounced] = useState('');
+  const [maxAgeDebounced, setMaxAgeDebounced] = useState('');
+  const [minMarketValueDebounced, setMinMarketValueDebounced] = useState('');
+  const [maxMarketValueDebounced, setMaxMarketValueDebounced] = useState('');
+
+  const buildParams = (currentPage) => {
+    const params = {
+      page: currentPage,
+      limit: pageSize,
+    };
+    if (selectedPosition) params.position = selectedPosition;
+    if (selectedTeam) params.team = selectedTeam;
+    if (selectedNationality) params.nationality = selectedNationality;
+    if (minAgeDebounced !== '') params.minAge = minAgeDebounced;
+    if (maxAgeDebounced !== '') params.maxAge = maxAgeDebounced;
+    if (minMarketValueDebounced !== '') params.minMarketValue = minMarketValueDebounced;
+    if (maxMarketValueDebounced !== '') params.maxMarketValue = maxMarketValueDebounced;
+    return params;
+  };
+
+  const fetchPlayers = async (currentPage = 1) => {
     setLoading(true);
     setError('');
 
     try {
       let response;
+      const params = buildParams(currentPage);
 
-      if (term) {
-        // Usar endpoint de búsqueda si hay término
-        const params = {
-          q: term,
-          page: currentPage,
-          limit: ITEMS_PER_PAGE,
-          ...(position && { position }),
-          ...(team && { team }),
-        };
-        response = await api.get('/players/search', { params });
+      if (searchTerm.trim()) {
+        response = await api.get('/players/search', { params: { ...params, q: searchTerm.trim() } });
       } else {
-        // Usar endpoint de listado
-        const params = {
-          page: currentPage,
-          limit: ITEMS_PER_PAGE,
-          ...(position && { position }),
-          ...(team && { team }),
-        };
         response = await api.get('/players', { params });
       }
 
-      const { data } = response;
-      setPlayers(data.data || []);
-      setTotalPages(data.meta?.totalPages || 1);
-      setTotalPlayers(data.meta?.total || data.total || 0);
+      const res = response.data;
+      const list = res.data || [];
+      const meta = res.meta || {};
 
-      // Extraer posiciones y equipos únicos
-      if (data.data && data.data.length > 0 && positions.length === 0) {
-        const uniquePositions = [...new Set(data.data.map((p) => p.position).filter(Boolean))];
-        const uniqueTeams = [...new Set(data.data.map((p) => p.team).filter(Boolean))];
-        setPositions(uniquePositions.sort());
-        setTeams(uniqueTeams.sort());
+      setPlayers(list);
+      setTotalPages(meta.totalPages || 1);
+      setTotalPlayers(meta.total ?? 0);
+
+      if (list.length > 0 && teams.length === 0) {
+        const tm = [...new Set(list.map((p) => p.team).filter(Boolean))].sort();
+        setTeams(tm);
+      }
+      if (list.length > 0 && nationalities.length === 0) {
+        const nat = [...new Set(list.map((p) => p.nationality).filter(Boolean))].sort();
+        setNationalities(nat);
       }
     } catch (err) {
-      const errorMessage =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        'No se pudieron cargar los jugadores. Intenta de nuevo más tarde.';
-      setError(errorMessage);
+      const msg = err?.response?.data?.message || err?.response?.data?.error || 'No se pudieron cargar los jugadores.';
+      setError(msg);
       setPlayers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Carga inicial de datos
   useEffect(() => {
-    fetchPlayers(page, searchTerm, selectedPosition, selectedTeam);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, searchTerm, selectedPosition, selectedTeam]);
+    fetchPlayers(page);
+  }, [page, pageSize, searchTerm, selectedPosition, selectedTeam, selectedNationality, minAgeDebounced, maxAgeDebounced, minMarketValueDebounced, maxMarketValueDebounced]);
 
-  // Búsqueda automática con debounce
+  // Debounce para filtros numéricos: la búsqueda se ejecuta al dejar de escribir
   useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      const trimmedSearch = search.trim();
-      // Solo actualizar si el término cambió
-      if (trimmedSearch !== searchTerm) {
+    const t = setTimeout(() => {
+      setMinAgeDebounced(minAge);
+      setMaxAgeDebounced(maxAge);
+      setMinMarketValueDebounced(minMarketValue);
+      setMaxMarketValueDebounced(maxMarketValue);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [minAge, maxAge, minMarketValue, maxMarketValue]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const trimmed = search.trim();
+      if (trimmed !== searchTerm) {
         setPage(1);
-        setSearchTerm(trimmedSearch);
+        setSearchTerm(trimmed);
       }
-    }, 500); // Esperar 500ms después de dejar de escribir
+    }, 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
-    return () => clearTimeout(debounceTimer);
-  }, [search, searchTerm]);
-
-  // Carga de imágenes de jugadores
-  useEffect(() => {
-    if (players.length === 0) return;
-
-    const loadImages = async () => {
-      try {
-        // Buscar imágenes para cada jugador
-        const images = await playerImageService.fetchMultiplePlayerImages(
-          players.map(p => ({ name: p.name, team: p.team }))
-        );
-        setPlayerImages(images);
-      } catch (error) {
-        console.warn('Error loading player images:', error);
-      }
-    };
-
-    loadImages();
-  }, [players]);
-
-  /**
-   * Limpia la búsqueda y carga todos los jugadores
-   */
   const handleClearSearch = () => {
     setSearch('');
     setSearchTerm('');
     setPage(1);
   };
 
-  /**
-   * Limpia todos los filtros
-   */
+  const hasActiveFilters =
+    selectedPosition ||
+    selectedTeam ||
+    selectedNationality ||
+    searchTerm ||
+    minAge !== '' ||
+    maxAge !== '' ||
+    minMarketValue !== '' ||
+    maxMarketValue !== '';
+
   const handleClearFilters = () => {
     setSelectedPosition('');
     setSelectedTeam('');
+    setSelectedNationality('');
+    setMinAge('');
+    setMaxAge('');
+    setMinMarketValue('');
+    setMaxMarketValue('');
+    setMinAgeDebounced('');
+    setMaxAgeDebounced('');
+    setMinMarketValueDebounced('');
+    setMaxMarketValueDebounced('');
+    setSearch('');
+    setSearchTerm('');
     setPage(1);
   };
 
-  /**
-   * Verifica si hay filtros activos
-   */
-  const hasActiveFilters = selectedPosition || selectedTeam || searchTerm;
-
-  // Cálculos para paginación
   const canPrev = page > 1;
   const canNext = page < totalPages;
-  const startIndex = (page - 1) * ITEMS_PER_PAGE + 1;
-  const endIndex = Math.min(page * ITEMS_PER_PAGE, totalPlayers);
+  const startIndex = totalPlayers === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endIndex = Math.min(page * pageSize, totalPlayers);
+
+  const inputStyle =
+    'w-full rounded-lg border bg-slate-800/80 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 border-slate-600 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none min-h-[44px] touch-manipulation';
+  const labelStyle = 'text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 block';
 
   return (
-    <section className="w-full min-h-screen px-3 py-6 sm:px-4 lg:px-6">
+    <section className="w-full min-h-screen px-3 py-4 sm:px-4 lg:px-6">
       <div className="mx-auto max-w-6xl">
-        {/* Encabezado con título y búsqueda */}
-        <div className="mb-8 flex flex-col gap-4 sm:gap-6">
-          {/* Encabezado: Título + Botón Crear */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg"
-                style={{
-                  backgroundColor: 'rgba(14, 165, 233, 0.1)',
-                  color: '#7dd3fc',
-                }}
+        {/* Header + Crear */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500/20 text-sky-400">
+              <Users size={22} />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-slate-100 sm:text-2xl">Directorio de Jugadores</h1>
+              <p className="text-xs text-slate-400 sm:text-sm">
+                Base de datos de <span className="font-semibold text-emerald-400">{totalPlayers}</span> jugadores
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/players/create')}
+            className="inline-flex min-h-[44px] touch-manipulation items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 py-2.5 font-semibold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-600 active:scale-[0.98]"
+          >
+            <Plus size={20} />
+            <span className="hidden sm:inline">Crear Jugador</span>
+            <span className="sm:hidden">Crear</span>
+          </button>
+        </div>
+
+        {/* Búsqueda global */}
+        <div className="mb-4 rounded-xl border border-slate-700/80 bg-slate-900/60 p-3 sm:p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-500" />
+              <input
+                type="search"
+                className={`${inputStyle} pl-10`}
+                placeholder="Buscar por nombre, equipo o nacionalidad..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                aria-label="Buscar jugadores"
+              />
+            </div>
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="min-h-[44px] touch-manipulation rounded-lg bg-slate-700 px-4 py-2.5 text-sm font-medium text-slate-200 hover:bg-slate-600"
               >
-                <Users size={20} />
+                Limpiar búsqueda
+              </button>
+            )}
+          </div>
+          {searchTerm && (
+            <p className="mt-2 text-sm text-sky-300/90">
+              Resultados para &quot;{searchTerm}&quot;: {totalPlayers} jugador{totalPlayers !== 1 ? 'es' : ''}
+            </p>
+          )}
+        </div>
+
+        {/* Filtros: desplegable (se abre/cierra al hacer clic); la búsqueda se ejecuta al elegir cada filtro) */}
+        <div className="mb-4 rounded-xl border border-slate-700/80 bg-slate-900/50 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((o) => !o)}
+            className="flex w-full min-h-[48px] touch-manipulation items-center justify-between px-4 py-3 text-left text-slate-200 hover:bg-slate-800/50 transition-colors"
+          >
+            <span className="flex items-center gap-2 font-semibold">
+              <Filter size={18} />
+              Filtros
+              {hasActiveFilters && (
+                <span className="rounded-full bg-sky-500/30 px-2 py-0.5 text-xs text-sky-300">Activos</span>
+              )}
+            </span>
+            <span className="text-slate-400">{filtersOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}</span>
+          </button>
+
+          <div className={`border-t border-slate-700/80 px-4 py-4 ${filtersOpen ? 'block' : 'hidden'}`}>
+            <p className="text-xs text-slate-500 mb-4">Los resultados se actualizan al instante al elegir cada filtro.</p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+              <div>
+                <label htmlFor="position-filter" className={labelStyle}>Posición</label>
+                <select
+                  id="position-filter"
+                  value={selectedPosition}
+                  onChange={(e) => {
+                    setSelectedPosition(e.target.value);
+                    setPage(1);
+                  }}
+                  className={inputStyle}
+                >
+                  <option value="">Todas</option>
+                  {POSICIONES_ORDEN.map((pos) => (
+                    <option key={pos} value={pos}>{pos}</option>
+                  ))}
+                </select>
               </div>
               <div>
-                <h1
-                  className="text-xl font-semibold sm:text-2xl"
-                  style={{
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    fontWeight: 600,
-                    color: '#f1f5f9',
+                <label htmlFor="team-filter" className={labelStyle}>Equipo</label>
+                <select
+                  id="team-filter"
+                  value={selectedTeam}
+                  onChange={(e) => {
+                    setSelectedTeam(e.target.value);
+                    setPage(1);
                   }}
+                  className={inputStyle}
                 >
-                  Directorio de Jugadores
-                </h1>
-                <p
-                  className="text-xs sm:text-sm"
-                  style={{
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    color: '#cbd5e1',
-                  }}
-                >
-                  Explora la base de datos de{' '}
-                  <span style={{ color: '#10b981', fontWeight: 600 }}>
-                    {totalPlayers} jugadores
-                  </span>{' '}
-                  profesionales
-                </p>
+                  <option value="">Todos</option>
+                  {teams.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
               </div>
-            </div>
-            {/* Botón Crear Jugador */}
-            <button
-              type="button"
-              onClick={() => navigate('/players/create')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all whitespace-nowrap"
-              style={{
-                backgroundColor: '#0ea5e9',
-                color: 'white',
-              }}
-              onMouseEnter={(e) => (e.target.style.backgroundColor = '#0ea5e9')}
-              onMouseLeave={(e) => (e.target.style.backgroundColor = '#0ea5e9')}
-            >
-              <Plus size={18} />
-              <span className="hidden sm:inline">Crear Jugador</span>
-              <span className="sm:hidden">Crear</span>
-            </button>
-          </div>
-
-          {/* Barra de búsqueda */}
-          <div
-            className="w-full"
-            style={{
-              backgroundColor: 'rgba(15, 23, 42, 0.7)',
-              border: '1px solid rgba(51, 65, 85, 0.5)',
-              borderRadius: '0.75rem',
-              padding: '0.75rem 1rem',
-            }}
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-1 items-center gap-2">
-                <Search
-                  size={18}
-                  style={{ color: '#94a3b8', flexShrink: 0 }}
-                />
+              <div>
+                <label htmlFor="nationality-filter" className={labelStyle}>Nacionalidad</label>
+                <select
+                  id="nationality-filter"
+                  value={selectedNationality}
+                  onChange={(e) => {
+                    setSelectedNationality(e.target.value);
+                    setPage(1);
+                  }}
+                  className={inputStyle}
+                >
+                  <option value="">Todas</option>
+                  {nationalities.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="min-age" className={labelStyle}>Edad mín.</label>
                 <input
-                  type="text"
-                  className="w-full bg-transparent text-sm outline-none placeholder:opacity-60"
-                  placeholder="Buscar por nombre, equipo, posición o país..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  style={{
-                    color: '#f1f5f9',
-                    fontFamily: 'Inter, system-ui, sans-serif',
+                  id="min-age"
+                  type="number"
+                  min={10}
+                  max={60}
+                  placeholder="Ej: 18"
+                  value={minAge}
+                  onChange={(e) => {
+                    setMinAge(e.target.value);
+                    setPage(1);
                   }}
+                  className={inputStyle}
                 />
               </div>
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={handleClearSearch}
-                  className="px-3 py-1.5 text-sm font-medium rounded transition-colors"
-                  style={{
-                    backgroundColor: '#f1f5f9',
-                    color: '#334155',
+              <div>
+                <label htmlFor="max-age" className={labelStyle}>Edad máx.</label>
+                <input
+                  id="max-age"
+                  type="number"
+                  min={10}
+                  max={60}
+                  placeholder="Ej: 35"
+                  value={maxAge}
+                  onChange={(e) => {
+                    setMaxAge(e.target.value);
+                    setPage(1);
                   }}
-                  onMouseEnter={(e) => (e.target.style.backgroundColor = '#e2e8f0')}
-                  onMouseLeave={(e) => (e.target.style.backgroundColor = '#f1f5f9')}
-                >
-                  Limpiar
-                </button>
-              )}
+                  className={inputStyle}
+                />
+              </div>
+              <div>
+                <label htmlFor="min-value" className={labelStyle}>Valor mín. (€)</label>
+                <input
+                  id="min-value"
+                  type="number"
+                  min={0}
+                  placeholder="Ej: 1000000"
+                  value={minMarketValue}
+                  onChange={(e) => {
+                    setMinMarketValue(e.target.value);
+                    setPage(1);
+                  }}
+                  className={inputStyle}
+                />
+              </div>
+              <div>
+                <label htmlFor="max-value" className={labelStyle}>Valor máx. (€)</label>
+                <input
+                  id="max-value"
+                  type="number"
+                  min={0}
+                  placeholder="Ej: 100000000"
+                  value={maxMarketValue}
+                  onChange={(e) => {
+                    setMaxMarketValue(e.target.value);
+                    setPage(1);
+                  }}
+                  className={inputStyle}
+                />
+              </div>
             </div>
-          </div>
-
-          {/* Resultados de búsqueda activa */}
-          {searchTerm && (
-            <div
-              className="flex items-center gap-2 rounded-lg p-3 text-sm"
-              style={{
-                backgroundColor: 'rgba(14, 165, 233, 0.1)',
-                borderLeft: '3px solid #0ea5e9',
-                color: '#bae6fd',
-              }}
-            >
-              <span style={{ fontWeight: 500 }}>
-                Resultados para "{searchTerm}": {totalPlayers} jugador
-                {totalPlayers !== 1 ? 'es' : ''}
-              </span>
-            </div>
-          )}
-
-          {/* Filtros Avanzados */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-3">
-            {/* Filtro por Posición */}
-            <div className="flex flex-col gap-1.5 flex-1">
-              <label
-                htmlFor="position-filter"
-                className="text-xs font-semibold uppercase tracking-wider"
-                style={{
-                  color: '#cbd5e1',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                }}
-              >
-                Posición
-              </label>
-              <select
-                id="position-filter"
-                value={selectedPosition}
-                onChange={(e) => {
-                  setSelectedPosition(e.target.value);
-                  setPage(1);
-                }}
-                style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  padding: '0.75rem',
-                  fontSize: '0.875rem',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                  color: '#1f2937',
-                }}
-              >
-                <option value="">Todas las posiciones</option>
-                {positions.map((position) => (
-                  <option key={position} value={position}>
-                    {position}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Filtro por Equipo */}
-            <div className="flex flex-col gap-1.5 flex-1">
-              <label
-                htmlFor="team-filter"
-                className="text-xs font-semibold uppercase tracking-wider"
-                style={{
-                  color: '#cbd5e1',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                }}
-              >
-                Equipo
-              </label>
-              <select
-                id="team-filter"
-                value={selectedTeam}
-                onChange={(e) => {
-                  setSelectedTeam(e.target.value);
-                  setPage(1);
-                }}
-                style={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.375rem',
-                  padding: '0.75rem',
-                  fontSize: '0.875rem',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                  color: '#1f2937',
-                }}
-              >
-                <option value="">Todos los equipos</option>
-                {teams.map((team) => (
-                  <option key={team} value={team}>
-                    {team}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Botón Limpiar Filtros */}
             {hasActiveFilters && (
               <button
                 type="button"
                 onClick={handleClearFilters}
-                className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded transition-colors"
-                style={{
-                  backgroundColor: '#ef4444',
-                  color: '#ffffff',
-                }}
-                onMouseEnter={(e) => (e.target.style.backgroundColor = '#dc2626')}
-                onMouseLeave={(e) => (e.target.style.backgroundColor = '#ef4444')}
+                className="mt-4 flex min-h-[44px] touch-manipulation items-center gap-2 rounded-lg bg-red-500/20 px-4 py-2.5 text-sm font-medium text-red-300 hover:bg-red-500/30"
               >
-                <X size={16} />
-                <span className="hidden sm:inline">Limpiar Filtros</span>
+                <X size={18} />
+                Limpiar filtros
               </button>
             )}
           </div>
         </div>
 
-        {/* Tabla de jugadores - Responsiva */}
-        <div
-          className="w-full overflow-x-auto rounded-lg"
-          style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-          }}
-        >
-          <table className="w-full border-collapse text-left text-sm">
-            {/* Encabezado de tabla */}
-            <thead
-              style={{
-                backgroundColor: '#f9fafb',
-                borderBottom: '1px solid #e5e7eb',
-              }}
-            >
-              <tr>
-                <th
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wider w-12"
-                  style={{
-                    color: '#374151',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    fontWeight: 600,
-                  }}
-                >
-                  Foto
-                </th>
-                <th
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    color: '#374151',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    fontWeight: 600,
-                  }}
-                >
-                  Nombre
-                </th>
-                <th
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    color: '#374151',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    fontWeight: 600,
-                  }}
-                >
-                  Equipo
-                </th>
-                <th
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    color: '#374151',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    fontWeight: 600,
-                  }}
-                >
-                  Posición
-                </th>
-                <th
-                  className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wider sm:table-cell"
-                  style={{
-                    color: '#374151',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    fontWeight: 600,
-                  }}
-                >
-                  Edad
-                </th>
-                <th
-                  className="hidden px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider md:table-cell"
-                  style={{
-                    color: '#374151',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    fontWeight: 600,
-                  }}
-                >
-                  Goles
-                </th>
-                <th
-                  className="hidden px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider md:table-cell"
-                  style={{
-                    color: '#374151',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    fontWeight: 600,
-                  }}
-                >
-                  Asistencias
-                </th>
-              </tr>
-            </thead>
-
-            {/* Cuerpo de tabla */}
-            <tbody>
-              {loading ? (
-                <PlayerSkeleton count={ITEMS_PER_PAGE} />
-              ) : error ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-8 text-center sm:py-12"
-                    style={{ color: '#ef4444' }}
-                  >
-                    <div className="flex flex-col items-center gap-3">
-                      <AlertCircle
-                        size={32}
-                        style={{ color: '#ef4444', opacity: 0.7 }}
-                      />
-                      <div>
-                        <p
-                          className="font-semibold"
-                          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-                        >
-                          Error al cargar los datos
-                        </p>
-                        <p className="text-sm" style={{ color: '#dc2626' }}>
-                          {error}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
+        {/* Tabla (escritorio) / Cards (móvil) */}
+        <div className="overflow-hidden rounded-xl border border-slate-700/80 bg-slate-900/40 shadow-xl">
+          {/* Desktop: table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-700/80 bg-slate-800/60">
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 w-14">Foto</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Nombre</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Equipo</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Posición</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Edad</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Valor</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">G/A</th>
                 </tr>
-              ) : players.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-8 text-center sm:py-12"
-                    style={{ color: '#6b7280' }}
-                  >
-                    <p
-                      className="text-sm font-medium"
-                      style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-                    >
-                      No se encontraron jugadores
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                players.map((player) => (
-                  <tr
-                    key={player.id}
-                    onClick={() => navigate(`/players/${player.id}`)}
-                    className="border-t transition-colors hover:bg-gray-50 cursor-pointer"
-                    style={{
-                      borderTopColor: '#f3f4f6',
-                      color: '#374151',
-                    }}
-                  >
-                    {/* Avatar con Imagen Real o Fallback */}
-                    <td className="px-4 py-3 text-center">
-                      {playerImages[player.name] ? (
-                        <img
-                          src={playerImages[player.name]}
-                          alt={player.name}
-                          className="h-10 w-10 rounded-full object-cover border border-gray-200"
-                          onError={(e) => {
-                            // Fallback a avatar si falla la imagen
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'inline-flex';
-                          }}
-                        />
-                      ) : null}
-                      <div
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-white"
-                        style={{
-                          backgroundColor: getAvatarColor(player.name),
-                          display: playerImages[player.name] ? 'none' : 'inline-flex',
-                        }}
-                      >
-                        {getInitials(player.name)}
+              </thead>
+              <tbody>
+                {loading && <PlayerSkeleton count={pageSize} />}
+                {!loading && error && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-12 text-center">
+                      <div className="flex flex-col items-center gap-3 text-red-400">
+                        <AlertCircle size={36} />
+                        <p className="font-medium">{error}</p>
                       </div>
-                    </td>
-
-                    {/* Nombre */}
-                    <td
-                      className="px-4 py-3 text-sm font-medium"
-                      style={{
-                        color: '#111827',
-                        fontFamily: 'Inter, system-ui, sans-serif',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {player.name}
-                    </td>
-
-                    {/* Equipo */}
-                    <td
-                      className="px-4 py-3 text-sm"
-                      style={{
-                        color: '#4b5563',
-                        fontFamily: 'Inter, system-ui, sans-serif',
-                      }}
-                    >
-                      {player.team || '—'}
-                    </td>
-
-                    {/* Posición */}
-                    <td
-                      className="px-4 py-3 text-sm"
-                      style={{
-                        color: '#4b5563',
-                        fontFamily: 'Inter, system-ui, sans-serif',
-                      }}
-                    >
-                      {player.position || '—'}
-                    </td>
-
-                    {/* Edad */}
-                    <td
-                      className="hidden px-4 py-3 text-sm sm:table-cell"
-                      style={{
-                        color: '#4b5563',
-                        fontFamily: 'Inter, system-ui, sans-serif',
-                      }}
-                    >
-                      {player.age ?? '—'}
-                    </td>
-
-                    {/* Goles */}
-                    <td
-                      className="hidden px-4 py-3 text-right text-sm font-medium md:table-cell"
-                      style={{
-                        color: '#0ea5e9',
-                        fontFamily: 'Inter, system-ui, sans-serif',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {player.goals ?? 0}
-                    </td>
-
-                    {/* Asistencias */}
-                    <td
-                      className="hidden px-4 py-3 text-right text-sm font-medium md:table-cell"
-                      style={{
-                        color: '#10b981',
-                        fontFamily: 'Inter, system-ui, sans-serif',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {player.assists ?? 0}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                )}
+                {!loading && !error && players.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-12 text-center text-slate-500">
+                      No se encontraron jugadores
+                    </td>
+                  </tr>
+                )}
+                {!loading && !error && players.map((player) => (
+                    <tr
+                      key={player.id}
+                      onClick={() => navigate(`/players/${player.id}`)}
+                      className="border-t border-slate-700/60 cursor-pointer transition hover:bg-slate-800/50 active:bg-slate-800/70"
+                    >
+                      <td className="px-4 py-3">
+                        <div
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold text-white"
+                          style={{ backgroundColor: getAvatarColor(player.name) }}
+                        >
+                          {getInitials(player.name)}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-100">{player.name}</td>
+                      <td className="px-4 py-3 text-slate-400">{player.team || '—'}</td>
+                      <td className="px-4 py-3 text-slate-400">{player.position || '—'}</td>
+                      <td className="px-4 py-3 text-slate-400">{player.age ?? '—'}</td>
+                      <td className="px-4 py-3 text-emerald-400/90">{formatMarketValue(player.market_value)}</td>
+                      <td className="px-4 py-3 text-right text-slate-400">
+                        {player.goals ?? 0} / {player.assists ?? 0}
+                      </td>
+                    </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile: cards */}
+          <div className="md:hidden divide-y divide-slate-700/60">
+            {loading && (
+              <div className="p-4 space-y-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="animate-pulse flex gap-4">
+                    <div className="h-14 w-14 rounded-full bg-slate-700" />
+                    <div className="flex-1 space-y-2">
+                    <div className="h-4 w-3/4 rounded bg-slate-700" />
+                    <div className="h-3 w-1/2 rounded bg-slate-700" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!loading && error && (
+              <div className="flex flex-col items-center gap-3 p-8 text-red-400">
+                <AlertCircle size={36} />
+                <p className="text-center font-medium">{error}</p>
+              </div>
+            )}
+            {!loading && !error && players.length === 0 && (
+              <p className="py-8 text-center text-slate-500">No se encontraron jugadores</p>
+            )}
+            {!loading && !error && players.map((player) => (
+                <button
+                  key={player.id}
+                  type="button"
+                  onClick={() => navigate(`/players/${player.id}`)}
+                  className="flex w-full min-h-[72px] touch-manipulation items-center gap-4 px-4 py-3 text-left transition active:bg-slate-800/60"
+                >
+                  <div
+                    className="h-14 w-14 flex-shrink-0 rounded-full flex items-center justify-center text-lg font-bold text-white"
+                    style={{ backgroundColor: getAvatarColor(player.name) }}
+                  >
+                    {getInitials(player.name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-100 truncate">{player.name}</p>
+                    <p className="text-sm text-slate-400 truncate">
+                      {[player.team, player.position].filter(Boolean).join(' · ') || '—'}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-medium text-emerald-400/90">{formatMarketValue(player.market_value)}</p>
+                    <p className="text-xs text-slate-500">{player.goals ?? 0}G / {player.assists ?? 0}A</p>
+                  </div>
+                </button>
+            ))}
+          </div>
         </div>
 
-        {/* Controles de paginación - Responsivo */}
+        {/* Paginación + tamaño de página */}
         {!loading && players.length > 0 && (
-          <div className="mt-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
-            {/* Información de página */}
-            <div
-              className="text-xs sm:text-sm font-medium"
-              style={{
-                color: '#6b7280',
-                fontFamily: 'Inter, system-ui, sans-serif',
-              }}
-            >
-              Mostrando {startIndex} a {endIndex} de {totalPlayers} jugadores
+          <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+              <p className="text-sm text-slate-400">
+                Mostrando {startIndex}–{endIndex} de {totalPlayers}
+              </p>
+              <div className="flex items-center gap-2">
+                <label htmlFor="page-size" className="text-sm text-slate-400">Por página:</label>
+                <select
+                  id="page-size"
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                >
+                  {PAGE_SIZE_OPTIONS.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-
-            {/* Botones de navegación */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => canPrev && setPage(page - 1)}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={!canPrev}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40"
-                style={{
-                  backgroundColor: canPrev ? '#f1f5f9' : '#f3f4f6',
-                  color: canPrev ? '#334155' : '#9ca3af',
-                  border: '1px solid #e5e7eb',
-                }}
-                onMouseEnter={(e) => {
-                  if (canPrev) {
-                    e.target.style.backgroundColor = '#e2e8f0';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (canPrev) {
-                    e.target.style.backgroundColor = '#f1f5f9';
-                  }
-                }}
+                className="min-h-[44px] touch-manipulation inline-flex items-center gap-1.5 rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700"
               >
-                <ChevronLeft size={16} />
-                <span className="hidden sm:inline">Anterior</span>
+                <ChevronLeft size={18} />
+                Anterior
               </button>
-
-              {/* Información de página en mobile */}
-              <span
-                className="px-3 py-2 text-sm font-medium sm:hidden"
-                style={{
-                  color: '#6b7280',
-                  fontFamily: 'Inter, system-ui, sans-serif',
-                }}
-              >
+              <span className="min-w-[80px] text-center text-sm text-slate-400">
                 {page} / {totalPages}
               </span>
-
               <button
                 type="button"
-                onClick={() => canNext && setPage(page + 1)}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={!canNext}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all disabled:cursor-not-allowed disabled:opacity-40"
-                style={{
-                  backgroundColor: canNext ? '#0ea5e9' : '#cbd5e1',
-                  color: '#ffffff',
-                  border: canNext ? '1px solid #0284c7' : '1px solid #ccc',
-                }}
-                onMouseEnter={(e) => {
-                  if (canNext) {
-                    e.target.style.backgroundColor = '#0284c7';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (canNext) {
-                    e.target.style.backgroundColor = '#0ea5e9';
-                  }
-                }}
+                className="min-h-[44px] touch-manipulation inline-flex items-center gap-1.5 rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sky-600"
               >
-                <span className="hidden sm:inline">Siguiente</span>
-                <ChevronRight size={16} />
+                Siguiente
+                <ChevronRight size={18} />
               </button>
-            </div>
-
-            {/* Información de página en escritorio */}
-            <div
-              className="hidden text-xs sm:text-sm font-medium sm:block"
-              style={{
-                color: '#6b7280',
-                fontFamily: 'Inter, system-ui, sans-serif',
-              }}
-            >
-              Página {page} de {totalPages}
             </div>
           </div>
         )}
 
-        {/* Mensaje cuando la búsqueda no tiene resultados */}
-        {!loading && error === '' && players.length === 0 && searchTerm && (
-          <div
-            className="mt-6 rounded-lg p-4 text-center sm:p-6"
-            style={{
-              backgroundColor: '#fef3c7',
-              border: '1px solid #fcd34d',
-              color: '#92400e',
-            }}
-          >
-            <p
-              className="text-sm sm:text-base font-medium"
-              style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-            >
-              No se encontraron jugadores que coincidan con "{searchTerm}"
-            </p>
-            <p
-              className="text-xs sm:text-sm mt-2"
-              style={{ color: '#b45309' }}
-            >
-              Intenta con otro término de búsqueda
-            </p>
+        {!loading && !error && players.length === 0 && searchTerm && (
+          <div className="mt-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-200/90 text-center text-sm">
+            No hay resultados para &quot;{searchTerm}&quot;. Prueba otro término o quita filtros.
           </div>
         )}
       </div>

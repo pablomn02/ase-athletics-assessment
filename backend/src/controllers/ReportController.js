@@ -11,6 +11,35 @@ const reportSchema = Joi.object({
   recommendation: Joi.string().allow('', null),
 });
 
+const getReport = async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id || Number.isNaN(id)) {
+    return res.status(400).json({
+      ok: false,
+      message: 'ID de reporte no válido',
+    });
+  }
+  try {
+    const report = await ReportModel.getReportById(id);
+    if (!report) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Reporte no encontrado',
+      });
+    }
+    return res.json({
+      ok: true,
+      data: report,
+    });
+  } catch (error) {
+    console.error('Error al obtener reporte:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error interno del servidor al obtener el reporte',
+    });
+  }
+};
+
 const listReports = async (req, res) => {
   const page = Number(req.query.page) > 0 ? Number(req.query.page) : 1;
   const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 20;
@@ -153,6 +182,7 @@ const deleteReport = async (req, res) => {
 };
 
 module.exports = {
+  getReport,
   listReports,
   createReport,
   updateReport,

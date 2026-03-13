@@ -1,28 +1,52 @@
 const pool = require('../config/db');
 
-const buildPlayersFilterQuery = (filters = {}) => {
-  const { position, team, minAge, maxAge } = filters;
+/** @param {number} placeholderStart - Índice inicial para $1, $2... (por defecto 1) */
+const buildPlayersFilterQuery = (filters = {}, placeholderStart = 1) => {
+  const { position, team, nationality, minAge, maxAge, minMarketValue, maxMarketValue } = filters;
   const conditions = [];
   const values = [];
+  let idx = placeholderStart;
 
   if (position) {
     values.push(position);
-    conditions.push(`p.position = $${values.length}`);
+    conditions.push(`p.position = $${idx}`);
+    idx++;
   }
 
   if (team) {
     values.push(team);
-    conditions.push(`p.team = $${values.length}`);
+    conditions.push(`p.team = $${idx}`);
+    idx++;
+  }
+
+  if (nationality) {
+    values.push(nationality);
+    conditions.push(`p.nationality = $${idx}`);
+    idx++;
   }
 
   if (minAge) {
     values.push(Number(minAge));
-    conditions.push(`p.age >= $${values.length}`);
+    conditions.push(`p.age >= $${idx}`);
+    idx++;
   }
 
   if (maxAge) {
     values.push(Number(maxAge));
-    conditions.push(`p.age <= $${values.length}`);
+    conditions.push(`p.age <= $${idx}`);
+    idx++;
+  }
+
+  if (minMarketValue != null && minMarketValue !== '') {
+    values.push(Number(minMarketValue));
+    conditions.push(`p.market_value >= $${idx}`);
+    idx++;
+  }
+
+  if (maxMarketValue != null && maxMarketValue !== '') {
+    values.push(Number(maxMarketValue));
+    conditions.push(`p.market_value <= $${idx}`);
+    idx++;
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -174,7 +198,7 @@ const createPlayer = async (playerData) => {
         market_value
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7,
-        $8, $9, $10, $11, $12, $13, $14
+        $8, $9, $10, $11, $12, $13
       )
       RETURNING *
       `,
@@ -373,7 +397,7 @@ const deletePlayer = async (id) => {
   }
 };
 
-const searchPlayers = async ({ q, page = 1, limit = 20 } = {}) => {
+const searchPlayers = async ({ q, page = 1, limit = 20, filters = {} } = {}) => {
   const term = (q || '').trim();
   const offset = (page - 1) * limit;
 
@@ -381,10 +405,21 @@ const searchPlayers = async ({ q, page = 1, limit = 20 } = {}) => {
     return { players: [], total: 0 };
   }
 
+  const { whereClause, values } = buildPlayersFilterQuery(filters, 2);
+  const searchCondition = `(p.name ILIKE $1 OR p.team ILIKE $1 OR p.nationality ILIKE $1)`;
+  const combinedWhere = whereClause
+    ? `WHERE ${searchCondition} AND ${whereClause.replace('WHERE ', '')}`
+    : `WHERE ${searchCondition}`;
+
+  const likeTerm = `%${term}%`;
+  const paramCount = 1 + values.length;
+  const queryValues = [likeTerm, ...values, limit, offset];
+  const countValues = [likeTerm, ...values];
+
   const client = await pool.connect();
 
   try {
-    const searchQuery = `
+    const baseSelect = `
       SELECT
         p.id,
         p.name,
@@ -401,28 +436,24 @@ const searchPlayers = async ({ q, page = 1, limit = 20 } = {}) => {
         p.contract_end,
         p.market_value
       FROM players p
-      WHERE
-        p.name ILIKE $1
-        OR p.team ILIKE $1
-        OR p.nationality ILIKE $1
+    `;
+
+    const searchQuery = `
+      ${baseSelect}
+      ${combinedWhere}
       ORDER BY p.name ASC
-      LIMIT $2 OFFSET $3
+      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
     `;
 
     const countQuery = `
       SELECT COUNT(*) AS total
       FROM players p
-      WHERE
-        p.name ILIKE $1
-        OR p.team ILIKE $1
-        OR p.nationality ILIKE $1
+      ${combinedWhere}
     `;
 
-    const likeTerm = `%${term}%`;
-
     const [rowsResult, countResult] = await Promise.all([
-      client.query(searchQuery, [likeTerm, limit, offset]),
-      client.query(countQuery, [likeTerm]),
+      client.query(searchQuery, queryValues),
+      client.query(countQuery, countValues),
     ]);
 
     const total = Number(countResult.rows[0].total) || 0;

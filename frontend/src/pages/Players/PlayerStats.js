@@ -1,71 +1,61 @@
 /**
  * PlayerStats.js
- * Componente para visualizar estadísticas de un jugador con barras de progreso
- * Muestra: ritmo, tiro, pase, defensa, físico, etc.
+ * Estadísticas del jugador: temporada, atributos en gráfico radar y contrato.
  */
 
-function PlayerStats({ player }) {
-  // Estadísticas por defecto (puedes obtenerlas de la API)
-  const stats = [
-    { label: 'Ritmo', value: player.pace || 75, icon: '⚡' },
-    { label: 'Tiro', value: player.shooting || 70, icon: '🎯' },
-    { label: 'Pase', value: player.passing || 72, icon: '🎪' },
-    { label: 'Regate', value: player.dribbling || 68, icon: '🏃' },
-    { label: 'Defensa', value: player.defense || 60, icon: '🛡️' },
-    { label: 'Físico', value: player.physical || 75, icon: '💪' },
-  ];
+import PlayerRadarChart from './PlayerRadarChart';
 
+function PlayerStats({ player }) {
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6" style={{ color: '#f1f5f9' }}>
-        Estadísticas
-      </h2>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-lg p-4"
-            style={{
-              backgroundColor: 'rgba(15, 23, 42, 0.7)',
-              borderColor: 'rgba(51, 65, 85, 0.5)',
-              border: '1px solid rgba(51, 65, 85, 0.5)',
-            }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">{stat.icon}</span>
-                <span style={{ color: '#cbd5e1' }} className="font-semibold">
-                  {stat.label}
-                </span>
-              </div>
-              <span className="text-lg font-bold" style={{ color: '#0ea5e9' }}>
-                {stat.value}
-              </span>
+      {/* Estadísticas de temporada */}
+      {(player.goals != null || player.assists != null || player.appearances != null) && (
+        <div
+          className="mb-8 rounded-lg border p-6"
+          style={{
+            borderColor: 'rgba(51, 65, 85, 0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.7)',
+          }}
+        >
+          <h3 className="text-xl font-bold mb-4" style={{ color: '#f1f5f9' }}>
+            Estadísticas de temporada
+          </h3>
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p style={{ color: '#94a3b8' }} className="text-sm uppercase tracking-wider">Partidos</p>
+              <p className="text-2xl font-bold" style={{ color: '#0ea5e9' }}>{player.appearances ?? 0}</p>
             </div>
-
-            {/* Barra de progreso */}
-            <div
-              className="h-2 rounded-full overflow-hidden"
-              style={{
-                backgroundColor: 'rgba(51, 65, 85, 0.5)',
-              }}
-            >
-              <div
-                className="h-full transition-all duration-700"
-                style={{
-                  width: `${stat.value}%`,
-                  backgroundColor:
-                    stat.value >= 80 ? '#10b981' : stat.value >= 60 ? '#0ea5e9' : '#f59e0b',
-                }}
-              ></div>
+            <div>
+              <p style={{ color: '#94a3b8' }} className="text-sm uppercase tracking-wider">Goles</p>
+              <p className="text-2xl font-bold" style={{ color: '#10b981' }}>{player.goals ?? 0}</p>
+            </div>
+            <div>
+              <p style={{ color: '#94a3b8' }} className="text-sm uppercase tracking-wider">Asistencias</p>
+              <p className="text-2xl font-bold" style={{ color: '#f59e0b' }}>{player.assists ?? 0}</p>
             </div>
           </div>
-        ))}
+        </div>
+      )}
+
+      {/* Atributos: gráfico radar (más grande en tablet/desktop, responsivo) */}
+      <div
+        className="mb-8 rounded-xl border p-4 sm:p-6 flex flex-col items-center overflow-visible"
+        style={{
+          borderColor: 'rgba(51, 65, 85, 0.5)',
+          backgroundColor: 'rgba(15, 23, 42, 0.7)',
+        }}
+      >
+        <h2 className="text-xl font-bold mb-4 sm:mb-6 w-full text-left" style={{ color: '#f1f5f9' }}>
+          Atributos
+        </h2>
+        <div className="w-full max-w-[320px] sm:max-w-[400px] md:max-w-[440px] mx-auto" style={{ minHeight: 0 }}>
+          <PlayerRadarChart player={player} />
+        </div>
+        <p className="mt-4 text-sm text-slate-500 text-center">Escala 0–100 · Verde: alto · Amarillo: medio · Rojo: bajo</p>
       </div>
 
-      {/* Información de Contrato */}
-      {(player.contractStart || player.contractEnd) && (
+      {/* Información de Contrato (snake_case del backend) */}
+      {(player.contract_salary != null || player.contract_end) && (
         <div
           className="mt-8 rounded-lg border p-6"
           style={{
@@ -77,23 +67,25 @@ function PlayerStats({ player }) {
             Información de Contrato
           </h3>
           <div className="grid gap-4 sm:grid-cols-2">
-            {player.contractStart && (
+            {player.contract_salary != null && (
               <div>
                 <p style={{ color: '#94a3b8' }} className="text-sm uppercase tracking-wider">
-                  Inicio
+                  Salario
                 </p>
                 <p className="text-lg font-semibold" style={{ color: '#f1f5f9' }}>
-                  {new Date(player.contractStart).toLocaleDateString('es-ES')}
+                  {typeof player.contract_salary === 'number'
+                    ? `€${player.contract_salary.toLocaleString('es-ES')}`
+                    : player.contract_salary}
                 </p>
               </div>
             )}
-            {player.contractEnd && (
+            {player.contract_end && (
               <div>
                 <p style={{ color: '#94a3b8' }} className="text-sm uppercase tracking-wider">
-                  Vencimiento
+                  Fin de contrato
                 </p>
                 <p className="text-lg font-semibold" style={{ color: '#f1f5f9' }}>
-                  {new Date(player.contractEnd).toLocaleDateString('es-ES')}
+                  {new Date(player.contract_end).toLocaleDateString('es-ES')}
                 </p>
               </div>
             )}
