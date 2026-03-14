@@ -1,0 +1,17 @@
+# Evitar copiar esto cuando el build usa context: .
+.git
+.gitignore
+.env
+.env.*
+*.log
+node_modules
+backend/node_modules
+frontend/node_modules
+frontend/build
+.cache
+coverage
+*.md
+!README.md
+docs
+.cursor
+terminals

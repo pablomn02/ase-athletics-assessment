@@ -1,21 +1,47 @@
 /**
- * Listado de reportes de scouting y enlace a creación.
+ * Listado de reportes de scouting con filtros y enlace a creación.
  */
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Plus, AlertCircle, Edit2 } from 'lucide-react';
+import { FileText, Plus, AlertCircle, Edit2, Filter } from 'lucide-react';
 import api from '../services/api';
+
+const RECOMMENDATION_OPTIONS = [
+  { value: '', label: 'Todas las recomendaciones' },
+  { value: 'Fichar', label: 'Fichar' },
+  { value: 'Monitorear', label: 'Monitorear' },
+  { value: 'Pasar', label: 'Pasar' },
+];
 
 function ReportsPage() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [players, setPlayers] = useState([]);
+  const [filterRecommendation, setFilterRecommendation] = useState('');
+  const [filterPlayerId, setFilterPlayerId] = useState('');
+
+  useEffect(() => {
+    const fetchPlayers = async () => {
+      try {
+        const res = await api.get('/players', { params: { limit: 200 } });
+        setPlayers(res.data?.data ?? []);
+      } catch {
+        setPlayers([]);
+      }
+    };
+    fetchPlayers();
+  }, []);
 
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const res = await api.get('/reports', { params: { limit: 50 } });
+        setLoading(true);
+        const params = { limit: 50 };
+        if (filterRecommendation) params.recommendation = filterRecommendation;
+        if (filterPlayerId) params.playerId = filterPlayerId;
+        const res = await api.get('/reports', { params });
         setReports(res.data?.data ?? []);
       } catch (err) {
         setError(err.response?.data?.message || 'Error al cargar reportes');
@@ -24,7 +50,7 @@ function ReportsPage() {
       }
     };
     fetchReports();
-  }, []);
+  }, [filterRecommendation, filterPlayerId]);
 
   return (
     <section className="w-full min-h-screen px-4 py-6">
@@ -54,6 +80,42 @@ function ReportsPage() {
             <p className="text-red-200">{error}</p>
           </div>
         )}
+
+        {/* Filtros */}
+        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-slate-700/80 bg-slate-900/50 p-4">
+          <span className="flex items-center gap-2 text-slate-400 font-medium">
+            <Filter size={18} />
+            Filtros
+          </span>
+          <select
+            value={filterRecommendation}
+            onChange={(e) => setFilterRecommendation(e.target.value)}
+            className="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 min-w-[180px]"
+          >
+            {RECOMMENDATION_OPTIONS.map((opt) => (
+              <option key={opt.value || 'all'} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <select
+            value={filterPlayerId}
+            onChange={(e) => setFilterPlayerId(e.target.value)}
+            className="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 min-w-[180px]"
+          >
+            <option value="">Todos los jugadores</option>
+            {players.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}{p.team ? ` (${p.team})` : ''}</option>
+            ))}
+          </select>
+          {(filterRecommendation || filterPlayerId) && (
+            <button
+              type="button"
+              onClick={() => { setFilterRecommendation(''); setFilterPlayerId(''); }}
+              className="text-sm text-amber-400 hover:text-amber-300"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
 
         {loading ? (
           <div className="animate-pulse space-y-4">

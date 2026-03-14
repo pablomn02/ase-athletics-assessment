@@ -33,18 +33,22 @@ function AnalysisPage() {
   const [stats, setStats] = useState(null);
   const [filterTeam, setFilterTeam] = useState('');
   const [filterPosition, setFilterPosition] = useState('');
+  const [filterMinAge, setFilterMinAge] = useState('');
+  const [filterMaxAge, setFilterMaxAge] = useState('');
   const [filterOptions, setFilterOptions] = useState({ teams: [], positions: [] });
 
-  const fetchStats = async (team, position) => {
+  const fetchStats = async (team, position, minAge, maxAge) => {
     try {
       setLoading(true);
       const params = {};
       if (team) params.team = team;
       if (position) params.position = position;
+      if (minAge !== '') params.minAge = minAge;
+      if (maxAge !== '') params.maxAge = maxAge;
       const res = await api.get('/dashboard/stats', { params });
       const data = res.data?.data ?? res.data;
       setStats(data);
-      if (!team && !position && data) {
+      if (!team && !position && !minAge && !maxAge && data) {
         setFilterOptions({
           teams: (data.byTeam || []).map((r) => r.team).filter(Boolean),
           positions: (data.byPosition || []).map((r) => r.position).filter(Boolean),
@@ -58,8 +62,8 @@ function AnalysisPage() {
   };
 
   useEffect(() => {
-    fetchStats(filterTeam, filterPosition);
-  }, [filterTeam, filterPosition]);
+    fetchStats(filterTeam, filterPosition, filterMinAge, filterMaxAge);
+  }, [filterTeam, filterPosition, filterMinAge, filterMaxAge]);
 
   if (loading) {
     return (
@@ -149,10 +153,28 @@ function AnalysisPage() {
               <option key={p} value={p}>{p}</option>
             ))}
           </select>
-          {(filterTeam || filterPosition) && (
+          <input
+            type="number"
+            min={16}
+            max={45}
+            placeholder="Edad mín."
+            value={filterMinAge}
+            onChange={(e) => setFilterMinAge(e.target.value)}
+            className="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 w-24"
+          />
+          <input
+            type="number"
+            min={16}
+            max={45}
+            placeholder="Edad máx."
+            value={filterMaxAge}
+            onChange={(e) => setFilterMaxAge(e.target.value)}
+            className="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 w-24"
+          />
+          {(filterTeam || filterPosition || filterMinAge !== '' || filterMaxAge !== '') && (
             <button
               type="button"
-              onClick={() => { setFilterTeam(''); setFilterPosition(''); }}
+              onClick={() => { setFilterTeam(''); setFilterPosition(''); setFilterMinAge(''); setFilterMaxAge(''); }}
               className="text-sm text-sky-400 hover:text-sky-300"
             >
               Limpiar filtros

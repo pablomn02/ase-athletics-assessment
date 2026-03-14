@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { normalizePositionForFilter } = require('../utils/positionFilter');
 
 /** @param {number} placeholderStart - Índice inicial para $1, $2... (por defecto 1) */
 const buildPlayersFilterQuery = (filters = {}, placeholderStart = 1) => {
@@ -8,7 +9,7 @@ const buildPlayersFilterQuery = (filters = {}, placeholderStart = 1) => {
   let idx = placeholderStart;
 
   if (position) {
-    values.push(position);
+    values.push(normalizePositionForFilter(position));
     conditions.push(`p.position = $${idx}`);
     idx++;
   }

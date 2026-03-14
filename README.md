@@ -12,6 +12,23 @@ Este proyecto es una solución integral diseñada para ojeadores y entrenadores 
 
 ---
 
+## 🐳 Levantar todo con Docker (un solo comando)
+
+Si tienes **Docker** y **Docker Compose** instalados, puedes levantar la base de datos, el backend y el frontend con:
+
+```bash
+# Desde la raíz del repositorio
+docker compose up --build
+```
+
+- **Frontend:** http://localhost:3000  
+- **API Backend:** http://localhost:5000  
+- **PostgreSQL:** puerto 5432 (user: `user_ase`, password: `password_ase`, DB: `ase_athletics`)
+
+La primera vez se ejecutan las migraciones y el seed de datos. Credenciales de acceso: `demo@ase-athletics.com` / `demo123`.
+
+---
+
 ## 🛠️ Stack Tecnológico
 
 **Frontend:**
@@ -51,3 +68,20 @@ npm run db:seed
 
 # Iniciar servidor de desarrollo
 npm run dev
+```
+
+### 3. Pruebas
+
+**Backend (requiere Postgres con esquema y opcionalmente seed):**
+```bash
+cd backend
+npm test
+```
+Incluye: pruebas de API (auth, jugadores, reportes), health check y un flujo de integración (registro → login → crear reporte).
+
+**Frontend:**
+```bash
+cd frontend
+npm test -- --watchAll=false
+```
+Incluye: pruebas unitarias de utilidades (p. ej. formateo de números).

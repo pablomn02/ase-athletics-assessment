@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { normalizePositionForFilter } = require('../utils/positionFilter');
 
 function buildWhere(filters) {
   const conditions = [];
@@ -10,7 +11,21 @@ function buildWhere(filters) {
   }
   if (filters.position) {
     conditions.push(`position = $${i++}`);
-    values.push(filters.position);
+    values.push(normalizePositionForFilter(filters.position));
+  }
+  if (filters.minAge != null && filters.minAge !== '') {
+    const n = Number(filters.minAge);
+    if (!Number.isNaN(n)) {
+      conditions.push(`age >= $${i++}`);
+      values.push(n);
+    }
+  }
+  if (filters.maxAge != null && filters.maxAge !== '') {
+    const n = Number(filters.maxAge);
+    if (!Number.isNaN(n)) {
+      conditions.push(`age <= $${i++}`);
+      values.push(n);
+    }
   }
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   return { where, values };

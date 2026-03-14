@@ -45,6 +45,7 @@ const listReports = async (req, res) => {
   const limit = Number(req.query.limit) > 0 ? Number(req.query.limit) : 20;
   const playerId = req.query.playerId;
   const scoutId = req.query.scoutId;
+  const recommendation = req.query.recommendation;
 
   try {
     const { reports, total } = await ReportModel.listReports({
@@ -52,6 +53,7 @@ const listReports = async (req, res) => {
       limit,
       playerId,
       scoutId,
+      recommendation,
     });
 
     return res.json({

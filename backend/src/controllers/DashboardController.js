@@ -5,6 +5,8 @@ const getStats = async (req, res) => {
     const filters = {};
     if (req.query.team?.trim()) filters.team = req.query.team.trim();
     if (req.query.position?.trim()) filters.position = req.query.position.trim();
+    if (req.query.minAge !== undefined && req.query.minAge !== '') filters.minAge = req.query.minAge;
+    if (req.query.maxAge !== undefined && req.query.maxAge !== '') filters.maxAge = req.query.maxAge;
     const stats = await DashboardModel.getDashboardStats(filters);
 
     return res.json({

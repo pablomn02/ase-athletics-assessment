@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 
-const listReports = async ({ page = 1, limit = 20, playerId, scoutId } = {}) => {
+const listReports = async ({ page = 1, limit = 20, playerId, scoutId, recommendation } = {}) => {
   const offset = (page - 1) * limit;
   const where = [];
   const values = [];
@@ -13,6 +13,11 @@ const listReports = async ({ page = 1, limit = 20, playerId, scoutId } = {}) => 
   if (scoutId) {
     values.push(Number(scoutId));
     where.push(`sr.scout_id = $${values.length}`);
+  }
+
+  if (recommendation && recommendation.trim()) {
+    values.push(`${recommendation.trim()}%`);
+    where.push(`sr.recommendation LIKE $${values.length}`);
   }
 
   const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
