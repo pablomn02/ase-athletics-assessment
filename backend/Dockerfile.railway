@@ -1,13 +1,13 @@
-# Para Railway: contexto de build = backend/ (Root Directory = backend).
-# No se copia data/ porque está en la raíz del repo; el seed fallará al arrancar y se ignora.
 FROM node:20-alpine
-
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+# Usamos la ruta completa desde la raíz del proyecto
+COPY backend/package.json backend/package-lock.json ./
 RUN npm ci --omit=dev
 
-COPY . .
+# Copiamos el contenido de backend y la carpeta data
+COPY backend/ .
+COPY data /app/data
 
 EXPOSE 5000
 

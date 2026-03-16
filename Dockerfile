@@ -1,15 +1,13 @@
 FROM node:20-alpine
 WORKDIR /app
 
-# Como ya estamos en 'backend', el package.json está en la raíz actual (.)
-COPY package.json package-lock.json ./
+# Usamos la ruta completa desde la raíz del proyecto
+COPY backend/package.json backend/package-lock.json ./
 RUN npm ci --omit=dev
 
-# Copiamos todo lo que hay en la carpeta actual
-COPY . .
-
-# Si la carpeta 'data' la moviste dentro de 'backend', déjala así:
-# COPY data ./data 
+# Copiamos el contenido de backend y la carpeta data
+COPY backend/ .
+COPY data /app/data
 
 EXPOSE 5000
 
