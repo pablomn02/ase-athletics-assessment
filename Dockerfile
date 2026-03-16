@@ -5,9 +5,8 @@ WORKDIR /app
 COPY backend/package.json backend/package-lock.json ./
 RUN npm ci --omit=dev
 
-# Copiamos el contenido de backend y la carpeta data
+# Copiamos el backend (incluye backend/data con los JSON del seed)
 COPY backend/ .
-COPY data /app/data
 
 EXPOSE 5000
 

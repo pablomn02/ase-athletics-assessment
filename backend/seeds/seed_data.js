@@ -25,9 +25,9 @@ const seedDatabase = async () => {
   try {
     console.log('--- Iniciando proceso de siembra de datos (Seeding) ---');
 
-    // Rutas a los ficheros de datos en el directorio /data
-    const playersPath = path.join(__dirname, '../../data/players_Data_production.json');
-    const scoutReportsPath = path.join(__dirname, '../../data/scout_report.json');
+    // Rutas a los ficheros de datos (backend/data en repo; en contenedor /app/data)
+    const playersPath = path.join(__dirname, '../data/players_Data_production.json');
+    const scoutReportsPath = path.join(__dirname, '../data/scout_report.json');
 
     // Leemos y parseamos el JSON de jugadores y de reportes de scouting
     const rawPlayersData = JSON.parse(fs.readFileSync(playersPath, 'utf-8'));
