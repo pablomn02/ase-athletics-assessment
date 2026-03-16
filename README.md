@@ -44,29 +44,24 @@ La primera vez se ejecutan las migraciones y el seed de datos. Credenciales de a
 
 ## ⚙️ Configuración de Desarrollo Local
 
-### 1. Requisitos Previos
-* Node.js (v16 o superior)
-* PostgreSQL (Instancia local o en la nube)
-* Git
+### 1. Requisitos previos
+* **Node.js** v18 o superior
+* **PostgreSQL** (instancia local o en la nube)
+* **Git**
 
 ### 2. Configuración del Backend
 ```bash
-# Navegar a la carpeta
 cd backend
-
-# Instalar dependencias
 npm install
-
-# Configurar variables de entorno (DATABASE_URL y JWT_SECRET)
 cp .env.example .env
+# Editar .env con tu DATABASE_URL y JWT_SECRET
 
-# Preparar la base de datos y cargar datos iniciales (JSON)
-npm run db:create
-npm run db:migrate
-npm run db:seed
+# Crear la base de datos en PostgreSQL (solo una vez)
+# Ejemplo: psql -U postgres -c "CREATE DATABASE ase_athletics;"
 
-# Iniciar servidor de desarrollo
-npm run dev
+npm run db:migrate   # Crea las tablas (init_schema.sql)
+npm run db:seed      # Carga jugadores y reportes desde backend/data/*.json
+npm run dev          # Servidor en http://localhost:5000
 ```
 
 ### 3. Pruebas
@@ -145,13 +140,9 @@ El backend usa **Express**, **PostgreSQL** y variables de entorno: `DATABASE_URL
 
 ### Pasos genéricos
 
-1. Crear un **nuevo proyecto** y añadir un **servicio PostgreSQL** (o base de datos).
-2. Crear un **servicio Web** que use este repositorio:
-   - **Root directory / Base directory:** `backend`.
-   - **Build command:** `npm install` (o el que indique la plataforma para Node).
-   - **Start command:** `npm start` (ejecuta `node src/index.js`).
-3. En el servicio Web, configurar las variables de entorno: `DATABASE_URL` (copiar desde el Postgres del proyecto), `JWT_SECRET`.
-4. **Esquema y datos iniciales:** en este proyecto el esquema se aplica con `node scripts/wait-and-migrate.js` (ejecuta `migrations/init_schema.sql`) y el seed con `npm run db:seed`. En Railway/Render puedes usar un *Pre-Deploy* o *Release* command como `node scripts/wait-and-migrate.js && npm run db:seed`, o ejecutarlo una vez por CLI usando la `DATABASE_URL` de producción.
+1. Crear un **nuevo proyecto** y añadir un **servicio PostgreSQL**.
+2. Crear un **servicio Web** que use este repositorio. Variables de entorno: **`DATABASE_URL`** (referenciar desde el Postgres), **`JWT_SECRET`**.
+3. **Arranque:** el comando `npm start` ejecuta `node scripts/entrypoint.js`, que aplica migraciones, ejecuta el seed y arranca la API. No hace falta configurar un Pre-Deploy aparte.
 
 ### Railway (resumen rápido)
 
@@ -177,3 +168,13 @@ El backend usa **Express**, **PostgreSQL** y variables de entorno: `DATABASE_URL
 3. En *Environment* del Web Service: `DATABASE_URL` (la URL del Postgres), `JWT_SECRET`.
 4. Opcional: en *Advanced* puedes definir un *Pre-Deploy Command* para migraciones/seed si lo tienes scriptado.
 5. La URL del servicio (ej. `https://tu-app.onrender.com`) es la que usas en **`REACT_APP_API_URL`** en Netlify.
+
+---
+
+## 📋 Resumen para entrega
+
+- **Repositorio:** monorepo con `backend/`, `frontend/`, `data/` (datos de ejemplo en `backend/data/`).
+- **Ejecución rápida:** `docker compose up --build` en la raíz (Postgres + API + frontend).
+- **Credenciales demo:** `demo@ase-athletics.com` / `demo123`.
+- **Documentación:** `README.md` (este archivo), `docs/database-schema.md` (esquema BD), `docs/api-documentation.md` (API), `docs/CHECKLIST-REQUISITOS.md` (verificación de requisitos).
+- **Despliegue:** Frontend en Netlify; backend en Railway (o Render/Fly.io) con PostgreSQL. Variables necesarias en backend: `DATABASE_URL`, `JWT_SECRET`.

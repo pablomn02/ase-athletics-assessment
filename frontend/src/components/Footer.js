@@ -3,7 +3,7 @@ import { Instagram, Twitter, Linkedin, ExternalLink } from 'lucide-react';
 const CURRENT_YEAR = new Date().getFullYear();
 const WEBSITE_URL = 'https://aseathletics.com';
 const SOCIAL = {
-  instagram: 'https://instagram.com/aseathletics',
+  instagram: 'https://instagram.com/ase.athletics',
   twitter: 'https://twitter.com/aseathletics',
   linkedin: 'https://linkedin.com/company/aseathletics',
 };
