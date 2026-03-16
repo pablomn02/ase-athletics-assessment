@@ -1,19 +1,16 @@
-# Despliegue del frontend (React) en Netlify.
-# El backend debe desplegarse por separado (Railway, Render, etc.) y configurar REACT_APP_API_URL.
-
 [build]
-  base    = "frontend"
+  base = "frontend"
+  
+  publish = "build"
+  
+  # Comando compilador
   command = "npm run build"
-  # Ruta desde la raíz del repo; así Netlify encuentra index.html y evita 404
-  publish = "frontend/build"
 
 [build.environment]
-  NODE_VERSION = "18"
-  # Evita que el build falle por warnings de CRA
+  NODE_VERSION = "20"
   CI = "false"
 
-# SPA: todas las rutas sirven index.html para que React Router funcione
 [[redirects]]
-  from   = "/*"
-  to     = "/index.html"
+  from = "/*"
+  to = "/index.html"
   status = 200
