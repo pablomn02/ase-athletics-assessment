@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node scripts/wait-and-migrate.js && (node seeds/seed_data.js 2>/dev/null || true) && node src/index.js",
     "dev": "nodemon src/index.js",
     "test": "jest --runInBand --forceExit",
     "test:watch": "jest --runInBand --watch",
