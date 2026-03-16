@@ -9,12 +9,18 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const { Pool } = require('pg');
 
-const connectionString = process.env.DATABASE_URL;
+// Railway puede inyectar DATABASE_URL, DATABASE_PRIVATE_URL o referencias; leer de process.env
+const connectionString =
+  process.env.DATABASE_URL ||
+  process.env.DATABASE_PRIVATE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_CONNECTION_URL;
 if (!connectionString) {
-  console.error('[wait-and-migrate] ERROR: DATABASE_URL no está definida.');
+  console.error('[wait-and-migrate] ERROR: No hay URL de base de datos.');
+  console.error('[wait-and-migrate] Define DATABASE_URL en Railway: Settings → Variables o enlaza el servicio PostgreSQL.');
   process.exit(1);
 }
-console.log('[wait-and-migrate] DATABASE_URL definida, conectando a Postgres...');
+console.log('[wait-and-migrate] URL de BD encontrada, conectando a Postgres...');
 
 const pool = new Pool({
   connectionString,
