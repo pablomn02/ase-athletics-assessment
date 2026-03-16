@@ -1,6 +1,7 @@
-# Configuración para desplegar el backend en Railway.
-# Importante: en el servicio de Railway debes configurar "Root Directory" = backend
-# para que Railpack detecte Node.js (package.json está en backend/).
+# Configuración opcional para el backend en Railway.
+# Si usas Docker (recomendado), en Settings del servicio pon:
+#   Root Directory: vacío   |   Dockerfile Path: backend/Dockerfile   |   Build Context: .
+# Así el build ve backend/ y data/ y el Dockerfile puede copiarlos correctamente.
 
 [build]
 builder = "railpack"

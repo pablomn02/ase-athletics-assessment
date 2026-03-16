@@ -7,7 +7,8 @@ COPY backend/package.json backend/package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY backend/ .
-COPY data /app/data
+# El seed (seeds/seed_data.js) busca ../../data → en el contenedor /data
+COPY data /data
 
 EXPOSE 5000
 
