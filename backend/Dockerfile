@@ -10,7 +10,5 @@ COPY backend/ .
 
 EXPOSE 5000
 
-# El comando de arranque
-CMD node scripts/wait-and-migrate.js && \
-    (node seeds/seed_data.js 2>/dev/null || true) && \
-    node src/index.js
+# Un solo proceso: migración → seed → API (evita que el contenedor pare entre pasos)
+CMD ["node", "scripts/entrypoint.js"]

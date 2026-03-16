@@ -8,5 +8,5 @@ builder = "railpack"
 
 [deploy]
 # Importante: ejecutar migración y seed antes de arrancar la API (si no, la BD queda sin tablas)
-startCommand = "node scripts/wait-and-migrate.js && (node seeds/seed_data.js 2>/dev/null || true) && node src/index.js"
+startCommand = "node scripts/entrypoint.js"
 healthcheckPath = "/health"
