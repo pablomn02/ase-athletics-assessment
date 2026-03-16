@@ -5,6 +5,9 @@
 const { execSync } = require('child_process');
 const path = require('path');
 
+// Log inmediato para confirmar que Railway ejecuta este script (no otro comando)
+console.log('[entrypoint] Iniciando: migración → seed → API');
+
 const root = path.join(__dirname, '..');
 process.chdir(root);
 
