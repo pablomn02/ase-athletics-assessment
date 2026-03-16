@@ -157,10 +157,9 @@ El backend usa **Express**, **PostgreSQL** y variables de entorno: `DATABASE_URL
 
 1. [railway.app](https://railway.app) → *Start a New Project* → *Deploy from GitHub repo* → elige el repo.
 2. Añade **PostgreSQL** en el mismo proyecto (*New* → *Database* → *PostgreSQL*). Railway te dará `DATABASE_URL` en Variables.
-3. Para el **servicio del backend:** *New* → *GitHub Repo* → mismo repo. En *Settings* del servicio:
-   - **Root Directory:** `backend`.
-   - **Build Command:** `npm install`.
-   - **Start Command:** `npm start`.
+3. Para el **servicio del backend:** *New* → *GitHub Repo* → mismo repo. En **Settings** del servicio:
+   - **Root Directory:** `backend` ← **obligatorio**. Si no lo pones, Railpack analiza la raíz del repo (donde no hay `package.json`) y falla con *"Railpack could not determine how to build the app"*.
+   - Build y Start: Railpack detectará Node.js al tener `backend` como raíz; opcionalmente usa el `railway.toml` dentro de `backend/`.
 4. Variables: añade `JWT_SECRET`; `DATABASE_URL` suele inyectarse si el Postgres está en el mismo proyecto.
 5. *Deploy*. La URL del servicio (ej. `https://tu-app.railway.app`) es la que debes poner en **`REACT_APP_API_URL`** en Netlify.
 

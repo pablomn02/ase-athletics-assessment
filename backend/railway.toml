@@ -1,0 +1,10 @@
+# Configuración para desplegar el backend en Railway.
+# Importante: en el servicio de Railway debes configurar "Root Directory" = backend
+# para que Railpack detecte Node.js (package.json está en backend/).
+
+[build]
+builder = "railpack"
+
+[deploy]
+startCommand = "node src/index.js"
+healthcheckPath = "/health"
