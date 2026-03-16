@@ -159,13 +159,14 @@ El backend usa **Express**, **PostgreSQL** y variables de entorno: `DATABASE_URL
 2. Añade **PostgreSQL** en el mismo proyecto (*New* → *Database* → *PostgreSQL*). Railway te dará `DATABASE_URL` en Variables.
 3. Para el **servicio del backend:** *New* → *GitHub Repo* → mismo repo.
 4. Variables: añade `JWT_SECRET`; `DATABASE_URL` suele inyectarse si el Postgres está en el mismo proyecto.
-5. **Checklist final (Settings del servicio):** deja la pestaña *Settings* así para que el build con Docker funcione:
+5. **Checklist final (Settings del servicio):** para que use Docker y no Railpack:
 
    | Campo | Valor | Por qué |
    |-------|--------|---------|
-   | **Root Directory** | *(vacío o `/`)* | Para que Docker pueda ver tanto `backend/` como `data/`. |
-   | **Dockerfile Path** | `backend/Dockerfile` | Indica dónde están las instrucciones de build. |
-   | **Build Context** | `.` *(o vacío)* | Usa la raíz del repo como base del build. |
+   | **Root Directory** | *(vacío o `/`)* | Para que el build vea la raíz del repo (y el `Dockerfile` que hay ahí). |
+   | **Build Context** | `.` *(o vacío)* | Contexto = raíz del repo (backend + data). |
+
+   Hay un **`Dockerfile` en la raíz del repo** para que Railway lo detecte y use Docker en lugar de Railpack. Si no lo encuentra, pon **Dockerfile Path:** `Dockerfile` (o `./Dockerfile`).
 
 6. *Deploy*. La URL del servicio (ej. `https://tu-app.railway.app`) es la que debes poner en **`REACT_APP_API_URL`** en Netlify.
 
