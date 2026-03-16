@@ -12,6 +12,7 @@ import api from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import PlayerStats from './PlayerStats';
 import { formatCurrencyWithSymbol } from '../../utils/formatNumber';
+import { positionToSpanish } from '../../utils/positionLabel';
 
 const getAvatarColor = (name) => {
   if (!name) return '#0ea5e9';
@@ -196,7 +197,7 @@ function PlayerDetailPage() {
                 {player.name}
               </h1>
               <p style={{ color: '#cbd5e1' }} className="mt-2">
-                {player.position || '—'}
+                {positionToSpanish(player.position) || '—'}
               </p>
             </div>
 

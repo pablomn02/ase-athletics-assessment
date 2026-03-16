@@ -75,7 +75,7 @@
 |-----------|--------|----------------|
 | Creación (contexto partido, fortalezas/debilidades, recomendación) | ✅ | `ReportFormPage.js`: jugador, fecha, valoración, fortalezas, debilidades, Fichar/Monitorear/Pasar |
 | Escala 1–10 (sliders o estrellas) | ✅ | Botones 1–10 para valoración global (equivale a “escala 1–10”; la spec permite “deslizadores o estrellas”) |
-| Lista de reportes y edición (formulario pre-rellenado) | ⚠️ Parcial | Lista en `ReportsPage.js` y edición en `/reports/edit/:id` con pre-carga. **No hay filtros en la lista de reportes** (la spec pide “lista con filtros”) |
+| Lista de reportes y edición (formulario pre-rellenado) | ✅ | Lista en `ReportsPage.js` y edición en `/reports/edit/:id` con pre-carga. Filtros por recomendación y por jugador (la spec pide “lista con filtros”) |
 
 ---
 
@@ -97,7 +97,7 @@
    La spec pide que los gráficos se actualicen con filtros de “equipo, posición o edad”. Hoy solo hay equipo y posición. Para cumplir al 100%: añadir filtro de edad (p. ej. rango) en `AnalysisPage` y que el backend `/dashboard/stats` acepte `minAge`/`maxAge` y los use en las consultas.
 
 2. **Lista de reportes – Filtros**  
-   La spec pide “lista de reportes con filtros”. La lista existe pero sin filtros (por jugador, fecha, recomendación, etc.). Añadir al menos un filtro (p. ej. por jugador o recomendación) y mostrarlos en la misma lista.
+   ✅ Hecho: filtros por recomendación (Fichar/Monitorear/Pasar) y por jugador en `ReportsPage.js`; backend `GET /api/reports` acepta `recommendation` y `playerId`.
 
 3. **docs/ – Esquema de DB**  
    Añadir en `docs/` un documento (p. ej. `database-schema.md`) que describa tablas (`users`, `players`, `player_attributes`, `scout_reports`), claves y relaciones, referenciando `migrations/init_schema.sql`.

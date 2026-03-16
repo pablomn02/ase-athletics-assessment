@@ -3,8 +3,8 @@
  * Comparar 2-4 jugadores: tabla de estadísticas y superposición de gráficos radar.
  */
 
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Search, X, Users } from 'lucide-react';
 import api from '../services/api';
 import { formatCurrencyWithSymbol } from '../utils/formatNumber';
@@ -31,11 +31,48 @@ const STAT_KEYS = [
 const MAX_PLAYERS = 4;
 
 function ComparePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [players, setPlayers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const initialIdsLoaded = useRef(false);
+
+  // Cargar jugadores desde la URL al montar (?ids=1,2,3)
+  useEffect(() => {
+    if (initialIdsLoaded.current) return;
+    const idsStr = searchParams.get('ids');
+    if (!idsStr || idsStr.trim() === '') return;
+    const ids = idsStr
+      .split(',')
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((id) => Number.isInteger(id) && id > 0);
+    const uniqueIds = [...new Set(ids)].slice(0, MAX_PLAYERS);
+    if (uniqueIds.length === 0) return;
+    initialIdsLoaded.current = true;
+    setLoadingDetails(true);
+    Promise.allSettled(uniqueIds.map((id) => api.get(`/players/${id}`)))
+      .then((results) => {
+        const loaded = results
+          .filter((r) => r.status === 'fulfilled' && r.value?.data?.data)
+          .map((r) => r.value.data.data);
+        setPlayers(loaded);
+      })
+      .finally(() => setLoadingDetails(false));
+  }, [searchParams]);
+
+  // Sincronizar URL con los jugadores seleccionados (URL compartible)
+  useEffect(() => {
+    if (players.length === 0) {
+      if (searchParams.get('ids')) setSearchParams({}, { replace: true });
+      return;
+    }
+    const ids = players.map((p) => p.id).join(',');
+    if (searchParams.get('ids') !== ids) {
+      setSearchParams({ ids }, { replace: true });
+    }
+  }, [players, searchParams, setSearchParams]);
 
   const searchPlayers = async () => {
     const q = searchQuery.trim();
@@ -88,7 +125,7 @@ function ComparePage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-100">Comparar jugadores</h1>
-            <p className="text-slate-400 text-sm">Selecciona entre 2 y 4 jugadores para comparar estadísticas y atributos</p>
+            <p className="text-slate-400 text-sm">Selecciona entre 2 y 4 jugadores para comparar estadísticas y atributos. La URL se actualiza al elegir jugadores y puedes compartirla.</p>
           </div>
         </div>
 

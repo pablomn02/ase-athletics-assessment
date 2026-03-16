@@ -86,6 +86,9 @@ function ReportsPage() {
           <span className="flex items-center gap-2 text-slate-400 font-medium">
             <Filter size={18} />
             Filtros
+            {(filterRecommendation || filterPlayerId) && (
+              <span className="rounded-full bg-amber-500/30 px-2 py-0.5 text-xs text-amber-300">Activos</span>
+            )}
           </span>
           <select
             value={filterRecommendation}

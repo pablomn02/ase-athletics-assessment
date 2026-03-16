@@ -6,9 +6,10 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Search, ChevronLeft, ChevronRight, AlertCircle, X, Plus, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, Search, ChevronLeft, ChevronRight, AlertCircle, X, Plus, Filter, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import api from '../../services/api';
 import { formatMarketValue } from '../../utils/formatNumber';
+import { positionToSpanish } from '../../utils/positionLabel';
 import PlayerSkeleton from './PlayerSkeleton';
 
 const PAGE_SIZE_OPTIONS = [20, 25, 30];
@@ -25,6 +26,39 @@ const getAvatarColor = (name) => {
 const getInitials = (name) => {
   if (!name) return '—';
   return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+};
+
+/** Escapa un valor para CSV (comillas si contiene coma, salto de línea o comillas). */
+const escapeCsvValue = (val) => {
+  if (val == null) return '';
+  const s = String(val).trim();
+  if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+};
+
+/** Genera CSV con los jugadores actuales (página visible) y dispara la descarga. */
+const downloadPlayersCsv = (list) => {
+  const headers = ['Nombre', 'Equipo', 'Posición', 'Edad', 'Nacionalidad', 'Valor de mercado (€)', 'Goles', 'Asistencias'];
+  const rows = list.map((p) => [
+    escapeCsvValue(p.name),
+    escapeCsvValue(p.team),
+    escapeCsvValue(positionToSpanish(p.position)),
+    escapeCsvValue(p.age),
+    escapeCsvValue(p.nationality),
+    p.market_value != null && p.market_value !== '' ? Number(p.market_value) : '',
+    p.goals ?? '',
+    p.assists ?? '',
+  ]);
+  const headerLine = headers.join(',');
+  const dataLines = rows.map((r) => r.join(','));
+  const csv = [headerLine, ...dataLines].join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `jugadores-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 };
 
 function PlayerList() {
@@ -198,15 +232,27 @@ function PlayerList() {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate('/players/create')}
-            className="inline-flex min-h-[44px] touch-manipulation items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 py-2.5 font-semibold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-600 active:scale-[0.98]"
-          >
-            <Plus size={20} />
-            <span className="hidden sm:inline">Añadir Jugador</span>
-            <span className="sm:hidden">Crear</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => downloadPlayersCsv(players)}
+              disabled={loading || players.length === 0}
+              className="inline-flex min-h-[44px] touch-manipulation items-center justify-center gap-2 rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2.5 font-medium text-slate-200 transition hover:bg-slate-700 disabled:opacity-50 disabled:pointer-events-none"
+              title="Exportar listado visible a CSV"
+            >
+              <Download size={18} />
+              <span className="hidden sm:inline">Exportar a CSV</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/players/create')}
+              className="inline-flex min-h-[44px] touch-manipulation items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 py-2.5 font-semibold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-600 active:scale-[0.98]"
+            >
+              <Plus size={20} />
+              <span className="hidden sm:inline">Añadir Jugador</span>
+              <span className="sm:hidden">Crear</span>
+            </button>
+          </div>
         </div>
 
         {/* Búsqueda global */}
@@ -444,7 +490,7 @@ function PlayerList() {
                       </td>
                       <td className="px-4 py-3 font-medium text-slate-100">{player.name}</td>
                       <td className="px-4 py-3 text-slate-400">{player.team || '—'}</td>
-                      <td className="px-4 py-3 text-slate-400">{player.position || '—'}</td>
+                      <td className="px-4 py-3 text-slate-400">{positionToSpanish(player.position) || '—'}</td>
                       <td className="px-4 py-3 text-slate-400">{player.age ?? '—'}</td>
                       <td className="px-4 py-3 text-emerald-400/90">{formatMarketValue(player.market_value)}</td>
                       <td className="px-4 py-3 text-right text-slate-400">
@@ -496,7 +542,7 @@ function PlayerList() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-slate-100 truncate">{player.name}</p>
                     <p className="text-sm text-slate-400 truncate">
-                      {[player.team, player.position].filter(Boolean).join(' · ') || '—'}
+                      {[player.team, positionToSpanish(player.position)].filter(Boolean).join(' · ') || '—'}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
