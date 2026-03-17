@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
 
 // Carga variables de entorno desde ../.env (DATABASE_URL, etc.)
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
@@ -49,6 +50,14 @@ const seedDatabase = async () => {
     }
 
     console.log(`Procesando ${playersData.length} jugadores...`);
+
+    // Usuario demo para pruebas (README: demo@ase-athletics.com / demo123)
+    const demoHash = await bcrypt.hash('demo123', 10);
+    await client.query(
+      `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3)
+       ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, password_hash = EXCLUDED.password_hash`,
+      ['Demo User', 'demo@ase-athletics.com', demoHash]
+    );
 
     // Iniciamos transacción y limpiamos tablas relacionadas antes de insertar
     await client.query('BEGIN');

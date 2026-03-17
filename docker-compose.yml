@@ -25,6 +25,7 @@ services:
       NODE_ENV: production
       PORT: 5000
       DATABASE_URL: postgresql://user_ase:password_ase@db:5432/ase_athletics
+      # En producción o entorno compartido: define JWT_SECRET en el sistema (export JWT_SECRET=tu_secreto)
       JWT_SECRET: ${JWT_SECRET:-ase_jwt_secret_docker}
     ports:
       - "5000:5000"

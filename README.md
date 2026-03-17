@@ -25,6 +25,8 @@ docker compose up --build
 
 La primera vez se crean las tablas y se cargan datos de ejemplo. Usa las credenciales anteriores para iniciar sesión.
 
+**Nota:** Por defecto se usa un `JWT_SECRET` de desarrollo. En un entorno compartido o producción, define la variable de entorno antes de levantar: `export JWT_SECRET=tu_secreto_largo_y_aleatorio` (y luego `docker compose up --build`).
+
 ---
 
 ## Opción 2: Instalación local (sin Docker)
